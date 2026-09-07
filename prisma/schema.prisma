@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum KnowledgeType {
+  technology
+  concept
+  algorithm
+  database
+}
+
+model User {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+
+  knowledge Knowledge[]
+}
+
+model Knowledge {
+  id          String        @id @default(uuid())
+  userId      String
+  title       String
+  description String
+  type        KnowledgeType
+  tags        String[]
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
