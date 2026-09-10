@@ -27,4 +27,16 @@ export const typeDefs = `#graphql
     knowledge: [Knowledge!]!
     knowledgeById(id: ID!): Knowledge
   }
+
+  input CreateKnowledgeInput {
+    title: String!
+    description: String!
+    type: KnowledgeType!
+    tags: [String!]!
+    userId: ID!
+  }
+
+  type Mutation {
+    createKnowledge(input: CreateKnowledgeInput!): Knowledge!
+  }
 `
