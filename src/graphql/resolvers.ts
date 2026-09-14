@@ -1,98 +1,80 @@
-import { KnowledgeScalarFieldEnum } from '../generated/prisma/internal/prismaNamespace.js'
 import { prisma } from '../lib/prisma.js'
+import { Prisma, KnowledgeType as PrismaKnowledgeType } from '../generated/prisma/client.js'
+import type {
+    Knowledge as GraphQLKnowledge,
+    KnowledgeType as GraphQLKnowledgeType,
+    Resolvers,
+} from '../generated/graphql.js'
 
-const MAX_TAG_LENGTH = 30
-const MAX_TAG_COUNT = 10
+type KnowledgeWithUser = Prisma.KnowledgeGetPayload<{
+    include: { user: true }
+}>
 
-export const resolvers = {
+function toGraphQLKnowledge(row: KnowledgeWithUser): GraphQLKnowledge {
+    return {
+        ...row,
+        type: row.type as GraphQLKnowledgeType,
+    }
+}
+
+export const resolvers: Resolvers = {
     Query: {
         knowledge: async () => {
-            return prisma.knowledge.findMany({
-                include: {
-                    user: true,
-                },
-                orderBy: {
-                    createdAt: 'desc',
-                },
+            const rows = await prisma.knowledge.findMany({
+                include: { user: true },
+                orderBy: { createdAt: 'desc' },
             })
+
+            return rows.map(toGraphQLKnowledge)
         },
-        knowledgeById: async (_: unknown, args: { id: string }) => {
-            return prisma.knowledge.findUnique({
+
+        knowledgeById: async (_, args) => {
+            const row = await prisma.knowledge.findUnique({
                 where: { id: args.id },
                 include: { user: true },
             })
+
+            return row ? toGraphQLKnowledge(row) : null
         },
     },
+
     Mutation: {
-        createKnowledge: async (
-            _: unknown,
-            args: {
-                input: {
-                    title: string
-                    description: string
-                    type: 'technology' | 'concept' | 'algorithm' | 'database'
-                    tags: string[]
-                    userId: string
-                }
-            },
-        ) => {
-            const { tags } = args.input
-
-            if (tags.length > MAX_TAG_COUNT) {
-                throw new Error(`Maximum ${MAX_TAG_COUNT} tags allowed`)
-            }
-
-            for (const tag of tags) {
-                if (tag.length > MAX_TAG_LENGTH) {
-                    throw new Error(`Tag "${tag}" must be ${MAX_TAG_LENGTH} characters or less`)
-                }
-            }
-
-            return prisma.knowledge.create({
+        createKnowledge: async (_, { input }) => {
+            const row = await prisma.knowledge.create({
                 data: {
-                    title: args.input.title,
-                    description: args.input.description,
-                    type: args.input.type,
-                    tags: args.input.tags,
-                    userId: args.input.userId,
+                    title: input.title,
+                    description: input.description,
+                    type: input.type as PrismaKnowledgeType,
+                    tags: input.tags,
+                    userId: input.userId,
                 },
-                include: {
-                    user: true,
-                },
+                include: { user: true },
             })
+
+            return toGraphQLKnowledge(row)
         },
-        updateKnowledge: async (
-            _: unknown,
-            args: {
-                id: string
-                input: {
-                    title: string
-                    description: string
-                }
-            },
-        ) => {
-            const updateKnowledge = await prisma.knowledge.update({
-                where: {
-                    id: args.id,
+
+        updateKnowledge: async (_, { id, input }) => {
+            const row = await prisma.knowledge.update({
+                where: { id },
+                data: {
+                    ...(input.title != null && { title: input.title }),
+                    ...(input.description != null && {
+                        description: input.description,
+                    }),
+                    ...(input.type != null && {
+                        type: input.type as PrismaKnowledgeType,
+                    }),
+                    ...(input.tags != null && { tags: input.tags }),
                 },
-                data: args.input,
-                include: {
-                    user: true,
-                },
+                include: { user: true },
             })
-            return updateKnowledge
+
+            return toGraphQLKnowledge(row)
         },
-        deleteKnowledge: async (
-            _: unknown,
-            args: {
-                id: string
-            },
-        ) => {
-            await prisma.knowledge.delete({
-                where: {
-                    id: args.id,
-                },
-            })
+
+        deleteKnowledge: async (_, { id }) => {
+            await prisma.knowledge.delete({ where: { id } })
             return true
         },
     },
