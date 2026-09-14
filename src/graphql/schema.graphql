@@ -1,0 +1,53 @@
+scalar DateTime
+
+type User {
+    id: ID!
+    name: String!
+    email: String!
+}
+
+enum KnowledgeType {
+    technology
+    concept
+    algorithm
+    database
+}
+
+type Knowledge {
+    id: ID!
+    title: String!
+    description: String!
+    type: KnowledgeType!
+    tags: [String!]!
+    user: User!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type Query {
+    knowledge: [Knowledge!]!
+    knowledgeById(id: ID!): Knowledge
+}
+
+input CreateKnowledgeInput {
+    title: String!
+    description: String!
+    type: KnowledgeType!
+    tags: [String!]!
+    userId: ID!
+}
+
+input UpdateKnowledge {
+    title: String
+    description: String
+    type: KnowledgeType
+    tags: [String!]
+}
+
+type Mutation {
+    createKnowledge(input: CreateKnowledgeInput!): Knowledge!
+
+    updateKnowledge(id: ID!, input: UpdateKnowledge!): Knowledge!
+
+    deleteKnowledge(id: ID!): Boolean!
+}

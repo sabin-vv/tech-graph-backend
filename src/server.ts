@@ -1,12 +1,14 @@
 import { ApolloServer } from '@apollo/server'
 import express from 'express'
 import { resolvers } from './graphql/resolvers.js'
-import { typeDefs } from './graphql/schema.js'
 import { expressMiddleware } from '@as-integrations/express5'
+import { readFile } from 'node:fs/promises'
 
 const app = express()
 
 const PORT = 4000
+
+const typeDefs = await readFile(new URL('./graphql/schema.graphql', import.meta.url), 'utf8')
 
 const graphqlServer = new ApolloServer({ typeDefs, resolvers })
 
