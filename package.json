@@ -7,12 +7,16 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "postinstall": "prisma skills sync || exit 0",
-        "dev": "tsx watch src/server.ts"
+        "dev": "tsx watch src/server.ts",
+        "codegen": "graphql-codegen --config codegen.ts"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "devDependencies": {
+        "@graphql-codegen/cli": "^7.4.1",
+        "@graphql-codegen/typescript": "^6.1.0",
+        "@graphql-codegen/typescript-resolvers": "^6.1.0",
         "@types/express": "^5.0.6",
         "@types/node": "^26.4.1",
         "@types/pg": "^8.23.1",
