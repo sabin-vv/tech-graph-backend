@@ -1,3 +1,4 @@
+import { KnowledgeScalarFieldEnum } from '../generated/prisma/internal/prismaNamespace.js'
 import { prisma } from '../lib/prisma.js'
 
 const MAX_TAG_LENGTH = 30
@@ -9,6 +10,9 @@ export const resolvers = {
             return prisma.knowledge.findMany({
                 include: {
                     user: true,
+                },
+                orderBy: {
+                    createdAt: 'desc',
                 },
             })
         },
@@ -30,7 +34,7 @@ export const resolvers = {
                     tags: string[]
                     userId: string
                 }
-            }
+            },
         ) => {
             const { tags } = args.input
 
@@ -56,6 +60,40 @@ export const resolvers = {
                     user: true,
                 },
             })
+        },
+        updateKnowledge: async (
+            _: unknown,
+            args: {
+                id: string
+                input: {
+                    title: string
+                    description: string
+                }
+            },
+        ) => {
+            const updateKnowledge = await prisma.knowledge.update({
+                where: {
+                    id: args.id,
+                },
+                data: args.input,
+                include: {
+                    user: true,
+                },
+            })
+            return updateKnowledge
+        },
+        deleteKnowledge: async (
+            _: unknown,
+            args: {
+                id: string
+            },
+        ) => {
+            await prisma.knowledge.delete({
+                where: {
+                    id: args.id,
+                },
+            })
+            return true
         },
     },
 }
