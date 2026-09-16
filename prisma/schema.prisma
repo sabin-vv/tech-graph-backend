@@ -14,12 +14,22 @@ enum KnowledgeType {
   database
 }
 
+enum Relation{
+  uses
+  related_to
+  part_of
+  depends_on
+  built_with
+  extends
+}
+
 model User {
   id    String @id @default(uuid())
   name  String
   email String @unique
 
-  knowledge Knowledge[]
+  knowledge   Knowledge[]
+  connections Connection[]
 }
 
 model Knowledge {
@@ -32,6 +42,26 @@ model Knowledge {
 
   user User @relation(fields: [userId], references: [id])
 
+  SourceConnections Connection[]  @relation("SourceConnections")
+  TargetConnections Connection[]  @relation("TargetConnections")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Connection {
+  id        String  @id @default(uuid())
+  userId    String
+  sourceId  String
+  targetId  String
+  relation  Relation
+
+  user      User        @relation(fields: [userId], references: [id])
+  source    Knowledge   @relation("SourceConnections", fields: [sourceId], references: [id])
+  target    Knowledge   @relation("TargetConnections", fields: [targetId], references: [id])
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId,sourceId,targetId,relation])
 }

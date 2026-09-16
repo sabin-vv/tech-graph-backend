@@ -13,6 +13,15 @@ enum KnowledgeType {
     database
 }
 
+enum Relation {
+    uses
+    related_to
+    part_of
+    depends_on
+    built_with
+    extends
+}
+
 type Knowledge {
     id: ID!
     title: String!
