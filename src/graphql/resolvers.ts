@@ -1,80 +1,87 @@
 import { prisma } from '../lib/prisma.js'
-import { Prisma, KnowledgeType as PrismaKnowledgeType } from '../generated/prisma/client.js'
-import type {
-    Knowledge as GraphQLKnowledge,
-    KnowledgeType as GraphQLKnowledgeType,
-    Resolvers,
-} from '../generated/graphql.js'
+import type { Resolvers } from '../generated/graphql.js'
 
-type KnowledgeWithUser = Prisma.KnowledgeGetPayload<{
-    include: { user: true }
-}>
-
-function toGraphQLKnowledge(row: KnowledgeWithUser): GraphQLKnowledge {
-    return {
-        ...row,
-        type: row.type as GraphQLKnowledgeType,
-    }
+const includeKnowledgeRelation = {
+    source: { include: { user: true } },
+    target: { include: { user: true } },
 }
 
 export const resolvers: Resolvers = {
     Query: {
         knowledge: async () => {
-            const rows = await prisma.knowledge.findMany({
+            return await prisma.knowledge.findMany({
                 include: { user: true },
                 orderBy: { createdAt: 'desc' },
             })
-
-            return rows.map(toGraphQLKnowledge)
         },
 
         knowledgeById: async (_, args) => {
-            const row = await prisma.knowledge.findUnique({
+            return await prisma.knowledge.findUnique({
                 where: { id: args.id },
                 include: { user: true },
             })
+        },
 
-            return row ? toGraphQLKnowledge(row) : null
+        connection: async () => {
+            return await prisma.connection.findMany({
+                include: includeKnowledgeRelation,
+                orderBy: { createdAt: 'desc' },
+            })
+        },
+
+        connectionByKnowledge: async (_, args) => {
+            return await prisma.connection.findMany({
+                where: {
+                    OR: [{ sourceId: args.id }, { targetId: args.id }],
+                },
+                include: includeKnowledgeRelation,
+            })
         },
     },
 
     Mutation: {
         createKnowledge: async (_, { input }) => {
-            const row = await prisma.knowledge.create({
-                data: {
-                    title: input.title,
-                    description: input.description,
-                    type: input.type as PrismaKnowledgeType,
-                    tags: input.tags,
-                    userId: input.userId,
-                },
+            return await prisma.knowledge.create({
+                data: input,
                 include: { user: true },
             })
-
-            return toGraphQLKnowledge(row)
         },
 
         updateKnowledge: async (_, { id, input }) => {
-            const row = await prisma.knowledge.update({
+            const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
+            return await prisma.knowledge.update({
                 where: { id },
-                data: {
-                    ...(input.title != null && { title: input.title }),
-                    ...(input.description != null && {
-                        description: input.description,
-                    }),
-                    ...(input.type != null && {
-                        type: input.type as PrismaKnowledgeType,
-                    }),
-                    ...(input.tags != null && { tags: input.tags }),
-                },
+                data,
                 include: { user: true },
             })
-
-            return toGraphQLKnowledge(row)
         },
 
         deleteKnowledge: async (_, { id }) => {
             await prisma.knowledge.delete({ where: { id } })
+
+            return true
+        },
+
+        createConnection: async (_, { input }) => {
+            return await prisma.connection.create({
+                data: input,
+                include: includeKnowledgeRelation,
+            })
+        },
+
+        updateConnection: async (_, { id, input }) => {
+            return await prisma.connection.update({
+                where: { id },
+                data: { ...(input?.relation != null && { relation: input.relation }) },
+                include: includeKnowledgeRelation,
+            })
+        },
+
+        deleteConnection: async (_, { id }) => {
+            await prisma.connection.delete({
+                where: { id },
+            })
+
             return true
         },
     },

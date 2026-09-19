@@ -12,6 +12,24 @@ export type Scalars = {
   DateTime: { input: Date; output: Date; }
 };
 
+export type Connection = {
+  __typename?: 'Connection';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  relation: Relation;
+  source: Knowledge;
+  target: Knowledge;
+  updatedAt: Scalars['DateTime']['output'];
+  userId: Scalars['ID']['output'];
+};
+
+export type CreateConnectionInput = {
+  relation: Relation;
+  sourceId: Scalars['ID']['input'];
+  targetId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateKnowledgeInput = {
   description: Scalars['String']['input'];
   tags: Array<Scalars['String']['input']>;
@@ -32,18 +50,27 @@ export type Knowledge = {
   user: User;
 };
 
-export enum KnowledgeType {
-  Algorithm = 'algorithm',
-  Concept = 'concept',
-  Database = 'database',
-  Technology = 'technology'
-}
+export const KnowledgeType = {
+  Algorithm: 'algorithm',
+  Concept: 'concept',
+  Database: 'database',
+  Technology: 'technology'
+} as const;
 
+export type KnowledgeType = typeof KnowledgeType[keyof typeof KnowledgeType];
 export type Mutation = {
   __typename?: 'Mutation';
+  createConnection: Connection;
   createKnowledge: Knowledge;
+  deleteConnection: Scalars['Boolean']['output'];
   deleteKnowledge: Scalars['Boolean']['output'];
+  updateConnection: Connection;
   updateKnowledge: Knowledge;
+};
+
+
+export type MutationCreateConnectionArgs = {
+  input: CreateConnectionInput;
 };
 
 
@@ -52,20 +79,38 @@ export type MutationCreateKnowledgeArgs = {
 };
 
 
+export type MutationDeleteConnectionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteKnowledgeArgs = {
   id: Scalars['ID']['input'];
 };
 
 
+export type MutationUpdateConnectionArgs = {
+  id: Scalars['ID']['input'];
+  input?: InputMaybe<UpdateConnectionInput>;
+};
+
+
 export type MutationUpdateKnowledgeArgs = {
   id: Scalars['ID']['input'];
-  input: UpdateKnowledge;
+  input: UpdateKnowledgeInput;
 };
 
 export type Query = {
   __typename?: 'Query';
+  connection: Array<Connection>;
+  connectionByKnowledge: Array<Connection>;
   knowledge: Array<Knowledge>;
   knowledgeById?: Maybe<Knowledge>;
+};
+
+
+export type QueryConnectionByKnowledgeArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -73,7 +118,21 @@ export type QueryKnowledgeByIdArgs = {
   id: Scalars['ID']['input'];
 };
 
-export type UpdateKnowledge = {
+export const Relation = {
+  BuiltWith: 'built_with',
+  DependsOn: 'depends_on',
+  Extends: 'extends',
+  PartOf: 'part_of',
+  RelatedTo: 'related_to',
+  Uses: 'uses'
+} as const;
+
+export type Relation = typeof Relation[keyof typeof Relation];
+export type UpdateConnectionInput = {
+  relation?: InputMaybe<Relation>;
+};
+
+export type UpdateKnowledgeInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Array<Scalars['String']['input']>>;
   title?: InputMaybe<Scalars['String']['input']>;
@@ -162,6 +221,8 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  Connection: ResolverTypeWrapper<Connection>;
+  CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
@@ -169,14 +230,18 @@ export type ResolversTypes = ResolversObject<{
   KnowledgeType: KnowledgeType;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  Relation: Relation;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
-  UpdateKnowledge: UpdateKnowledge;
+  UpdateConnectionInput: UpdateConnectionInput;
+  UpdateKnowledgeInput: UpdateKnowledgeInput;
   User: ResolverTypeWrapper<User>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
+  Connection: Connection;
+  CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   DateTime: Scalars['DateTime']['output'];
   ID: Scalars['ID']['output'];
@@ -184,8 +249,19 @@ export type ResolversParentTypes = ResolversObject<{
   Mutation: Record<PropertyKey, never>;
   Query: Record<PropertyKey, never>;
   String: Scalars['String']['output'];
-  UpdateKnowledge: UpdateKnowledge;
+  UpdateConnectionInput: UpdateConnectionInput;
+  UpdateKnowledgeInput: UpdateKnowledgeInput;
   User: User;
+}>;
+
+export type ConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Connection'] = ResolversParentTypes['Connection']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  relation?: Resolver<ResolversTypes['Relation'], ParentType, ContextType>;
+  source?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType>;
+  target?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
 export interface DateTimeScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['DateTime'], any> {
@@ -204,12 +280,17 @@ export type KnowledgeResolvers<ContextType = any, ParentType extends ResolversPa
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
+  createConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationCreateConnectionArgs, 'input'>>;
   createKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationCreateKnowledgeArgs, 'input'>>;
+  deleteConnection?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteConnectionArgs, 'id'>>;
   deleteKnowledge?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteKnowledgeArgs, 'id'>>;
+  updateConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationUpdateConnectionArgs, 'id'>>;
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
 }>;
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
+  connection?: Resolver<Array<ResolversTypes['Connection']>, ParentType, ContextType>;
+  connectionByKnowledge?: Resolver<Array<ResolversTypes['Connection']>, ParentType, ContextType, RequireFields<QueryConnectionByKnowledgeArgs, 'id'>>;
   knowledge?: Resolver<Array<ResolversTypes['Knowledge']>, ParentType, ContextType>;
   knowledgeById?: Resolver<Maybe<ResolversTypes['Knowledge']>, ParentType, ContextType, RequireFields<QueryKnowledgeByIdArgs, 'id'>>;
 }>;
@@ -221,6 +302,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 }>;
 
 export type Resolvers<ContextType = any> = ResolversObject<{
+  Connection?: ConnectionResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Knowledge?: KnowledgeResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;

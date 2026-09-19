@@ -33,9 +33,21 @@ type Knowledge {
     updatedAt: DateTime!
 }
 
+type Connection {
+    id: ID!
+    userId: ID!
+    source: Knowledge!
+    target: Knowledge!
+    relation: Relation!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
 type Query {
     knowledge: [Knowledge!]!
     knowledgeById(id: ID!): Knowledge
+    connection: [Connection!]!
+    connectionByKnowledge(id: ID!): [Connection!]!
 }
 
 input CreateKnowledgeInput {
@@ -46,17 +58,34 @@ input CreateKnowledgeInput {
     userId: ID!
 }
 
-input UpdateKnowledge {
+input UpdateKnowledgeInput {
     title: String
     description: String
     type: KnowledgeType
     tags: [String!]
 }
 
+input CreateConnectionInput {
+    userId: ID!
+    sourceId: ID!
+    targetId: ID!
+    relation: Relation!
+}
+
+input UpdateConnectionInput {
+    relation: Relation
+}
+
 type Mutation {
     createKnowledge(input: CreateKnowledgeInput!): Knowledge!
 
-    updateKnowledge(id: ID!, input: UpdateKnowledge!): Knowledge!
+    updateKnowledge(id: ID!, input: UpdateKnowledgeInput!): Knowledge!
 
     deleteKnowledge(id: ID!): Boolean!
+
+    createConnection(input: CreateConnectionInput!): Connection!
+
+    updateConnection(id: ID!, input: UpdateConnectionInput): Connection!
+
+    deleteConnection(id: ID!): Boolean!
 }
