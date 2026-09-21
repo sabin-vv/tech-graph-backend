@@ -3,6 +3,7 @@ import express from 'express'
 import { resolvers } from './graphql/resolvers.js'
 import { expressMiddleware } from '@as-integrations/express5'
 import { readFile } from 'node:fs/promises'
+import cors from 'cors'
 
 const app = express()
 
@@ -15,6 +16,11 @@ const graphqlServer = new ApolloServer({ typeDefs, resolvers })
 await graphqlServer.start()
 
 app.use(express.json())
+app.use(
+    cors({
+        origin: 'http://localhost:3000',
+    }),
+)
 
 app.use('/graphql', expressMiddleware(graphqlServer))
 
