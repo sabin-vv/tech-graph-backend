@@ -22,14 +22,14 @@ export const resolvers: Resolvers = {
             })
         },
 
-        connection: async () => {
+        connections: async () => {
             return await prisma.connection.findMany({
                 include: includeKnowledgeRelation,
                 orderBy: { createdAt: 'desc' },
             })
         },
 
-        connectionByKnowledge: async (_, args) => {
+        connectionsByKnowledge: async (_, args) => {
             return await prisma.connection.findMany({
                 where: {
                     OR: [{ sourceId: args.id }, { targetId: args.id }],

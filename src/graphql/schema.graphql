@@ -46,8 +46,8 @@ type Connection {
 type Query {
     knowledge: [Knowledge!]!
     knowledgeById(id: ID!): Knowledge
-    connection: [Connection!]!
-    connectionByKnowledge(id: ID!): [Connection!]!
+    connections: [Connection!]!
+    connectionsByKnowledge(id: ID!): [Connection!]!
 }
 
 input CreateKnowledgeInput {
