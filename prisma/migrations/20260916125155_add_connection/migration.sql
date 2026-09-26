@@ -1,14 +1,31 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "Relation" AS ENUM ('uses', 'related_to', 'part_of', 'depends_on', 'built_with', 'extends');
 
-  - The values [dpends_on] on the enum `Relation` will be removed. If these variants are still used in the database, this will fail.
+-- CreateTable
+CREATE TABLE "Connection" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "relation" "Relation" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-*/
--- AlterEnum
-BEGIN;
-CREATE TYPE "Relation_new" AS ENUM ('uses', 'related_to', 'part_of', 'depends_on', 'built_with', 'extends');
-ALTER TABLE "Connection" ALTER COLUMN "relation" TYPE "Relation_new" USING ("relation"::text::"Relation_new");
-ALTER TYPE "Relation" RENAME TO "Relation_old";
-ALTER TYPE "Relation_new" RENAME TO "Relation";
-DROP TYPE "public"."Relation_old";
-COMMIT;
+    CONSTRAINT "Connection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Connection_userId_sourceId_targetId_relation_key"
+ON "Connection"("userId", "sourceId", "targetId", "relation");
+
+-- AddForeignKey
+ALTER TABLE "Connection" ADD CONSTRAINT "Connection_userId_fkey"
+FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Connection" ADD CONSTRAINT "Connection_sourceId_fkey"
+FOREIGN KEY ("sourceId") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Connection" ADD CONSTRAINT "Connection_targetId_fkey"
+FOREIGN KEY ("targetId") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
