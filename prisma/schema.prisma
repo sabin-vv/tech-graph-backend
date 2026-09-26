@@ -14,13 +14,22 @@ enum KnowledgeType {
   database
 }
 
-enum Relation{
+enum Relation {
   uses
   related_to
   part_of
   depends_on
   built_with
   extends
+}
+
+enum ResourceType {
+  article
+  video
+  documentation
+  course
+  github
+  other
 }
 
 model User {
@@ -30,6 +39,7 @@ model User {
 
   knowledge   Knowledge[]
   connections Connection[]
+  resources   Resource[]
 }
 
 model Knowledge {
@@ -42,26 +52,47 @@ model Knowledge {
 
   user User @relation(fields: [userId], references: [id])
 
-  SourceConnections Connection[]  @relation("SourceConnections")
-  TargetConnections Connection[]  @relation("TargetConnections")
+  SourceConnections Connection[] @relation("SourceConnections")
+  TargetConnections Connection[] @relation("TargetConnections")
+
+  resources Resource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Connection {
-  id        String  @id @default(uuid())
-  userId    String
-  sourceId  String
-  targetId  String
-  relation  Relation
+  id       String   @id @default(uuid())
+  userId   String
+  sourceId String
+  targetId String
+  relation Relation
 
-  user      User        @relation(fields: [userId], references: [id])
-  source    Knowledge   @relation("SourceConnections", fields: [sourceId], references: [id])
-  target    Knowledge   @relation("TargetConnections", fields: [targetId], references: [id])
-  
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  user   User      @relation(fields: [userId], references: [id])
+  source Knowledge @relation("SourceConnections", fields: [sourceId], references: [id])
+  target Knowledge @relation("TargetConnections", fields: [targetId], references: [id])
 
-  @@unique([userId,sourceId,targetId,relation])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, sourceId, targetId, relation])
+}
+
+model Resource {
+  id          String       @id @default(uuid())
+  userId      String
+  knowledgeId String
+  title       String
+  url         String
+  type        ResourceType
+  description String
+
+  user      User      @relation(fields: [userId], references: [id])
+  knowledge Knowledge @relation(fields: [knowledgeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([knowledgeId])
+  @@index(userId)
 }
