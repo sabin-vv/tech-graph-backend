@@ -12,6 +12,14 @@ enum KnowledgeType {
     algorithm
     database
 }
+enum ResourceType {
+    article
+    video
+    documentation
+    course
+    github
+    other
+}
 
 enum Relation {
     uses
@@ -43,11 +51,29 @@ type Connection {
     updatedAt: DateTime!
 }
 
+type Resource {
+    id: ID!
+    userId: ID!
+    knowledgeId: ID!
+    title: String!
+    url: String!
+    type: ResourceType!
+    description: String!
+    user: User!
+    knowledge: Knowledge!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
 type Query {
     knowledge: [Knowledge!]!
     knowledgeById(id: ID!): Knowledge
+
     connections: [Connection!]!
     connectionsByKnowledge(id: ID!): [Connection!]!
+
+    resources: [Resource!]!
+    resourcesByKnowledge(id: ID!): [Resource!]!
 }
 
 input CreateKnowledgeInput {
@@ -76,6 +102,22 @@ input UpdateConnectionInput {
     relation: Relation
 }
 
+input CreateResourceInput {
+    userId: ID!
+    knowledgeId: ID!
+    title: String!
+    url: String!
+    type: ResourceType!
+    description: String!
+}
+
+input UpdateResourceInput {
+    title: String
+    url: String
+    type: ResourceType
+    description: String
+}
+
 type Mutation {
     createKnowledge(input: CreateKnowledgeInput!): Knowledge!
 
@@ -88,4 +130,10 @@ type Mutation {
     updateConnection(id: ID!, input: UpdateConnectionInput): Connection!
 
     deleteConnection(id: ID!): Boolean!
+
+    createResource(input: CreateResourceInput!): Resource!
+
+    updateResource(id: ID!, input: UpdateResourceInput!): Resource!
+
+    deleteResource(id: ID!): Boolean!
 }

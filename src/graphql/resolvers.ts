@@ -37,6 +37,39 @@ export const resolvers: Resolvers = {
                 include: includeKnowledgeRelation,
             })
         },
+        resources: async () => {
+            return await prisma.resource.findMany({
+                include: {
+                    user: true,
+                    knowledge: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    updatedAt: 'desc',
+                },
+            })
+        },
+        resourcesByKnowledge: async (_, args) => {
+            return await prisma.resource.findMany({
+                where: {
+                    knowledgeId: args.id,
+                },
+                include: {
+                    user: true,
+                    knowledge: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    updatedAt: 'desc',
+                },
+            })
+        },
     },
 
     Mutation: {
@@ -82,6 +115,46 @@ export const resolvers: Resolvers = {
                 where: { id },
             })
 
+            return true
+        },
+
+        createResource: async (_, { input }) => {
+            return await prisma.resource.create({
+                data: input,
+                include: {
+                    user: true,
+                    knowledge: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+            })
+        },
+
+        updateResource: async (__dirname, { id, input }) => {
+            return await prisma.resource.update({
+                where: { id },
+                data: {
+                    ...(input.title && { title: input.title }),
+                    ...(input.type && { type: input.type }),
+                    ...(input.description && { description: input.description }),
+                    ...(input.url && { url: input.url }),
+                },
+                include: {
+                    user: true,
+                    knowledge: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+            })
+        },
+        deleteResource: async (_, { id }) => {
+            await prisma.resource.delete({
+                where: { id },
+            })
             return true
         },
     },
