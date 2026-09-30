@@ -65,6 +65,16 @@ type Resource {
     updatedAt: DateTime!
 }
 
+input SignupInput {
+    name: String!
+    email: String!
+    password: String!
+}
+type AuthPayload {
+    token: String!
+    user: User!
+}
+
 type Query {
     knowledge: [Knowledge!]!
     knowledgeById(id: ID!): Knowledge
@@ -136,4 +146,6 @@ type Mutation {
     updateResource(id: ID!, input: UpdateResourceInput!): Resource!
 
     deleteResource(id: ID!): Boolean!
+
+    signup(input: SignupInput!): AuthPayload!
 }
