@@ -12,6 +12,12 @@ export type Scalars = {
   DateTime: { input: Date; output: Date; }
 };
 
+export type AuthPayload = {
+  __typename?: 'AuthPayload';
+  token: Scalars['String']['output'];
+  user: User;
+};
+
 export type Connection = {
   __typename?: 'Connection';
   createdAt: Scalars['DateTime']['output'];
@@ -75,6 +81,7 @@ export type Mutation = {
   deleteConnection: Scalars['Boolean']['output'];
   deleteKnowledge: Scalars['Boolean']['output'];
   deleteResource: Scalars['Boolean']['output'];
+  signup: AuthPayload;
   updateConnection: Connection;
   updateKnowledge: Knowledge;
   updateResource: Resource;
@@ -108,6 +115,11 @@ export type MutationDeleteKnowledgeArgs = {
 
 export type MutationDeleteResourceArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationSignupArgs = {
+  input: SignupInput;
 };
 
 
@@ -188,6 +200,12 @@ export const ResourceType = {
 } as const;
 
 export type ResourceType = typeof ResourceType[keyof typeof ResourceType];
+export type SignupInput = {
+  email: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+};
+
 export type UpdateConnectionInput = {
   relation?: InputMaybe<Relation>;
 };
@@ -287,6 +305,7 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
+  AuthPayload: ResolverTypeWrapper<AuthPayload>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Connection: ResolverTypeWrapper<Connection>;
   CreateConnectionInput: CreateConnectionInput;
@@ -301,6 +320,7 @@ export type ResolversTypes = ResolversObject<{
   Relation: Relation;
   Resource: ResolverTypeWrapper<Resource>;
   ResourceType: ResourceType;
+  SignupInput: SignupInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   UpdateConnectionInput: UpdateConnectionInput;
   UpdateKnowledgeInput: UpdateKnowledgeInput;
@@ -310,6 +330,7 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
+  AuthPayload: AuthPayload;
   Boolean: Scalars['Boolean']['output'];
   Connection: Connection;
   CreateConnectionInput: CreateConnectionInput;
@@ -321,11 +342,17 @@ export type ResolversParentTypes = ResolversObject<{
   Mutation: Record<PropertyKey, never>;
   Query: Record<PropertyKey, never>;
   Resource: Resource;
+  SignupInput: SignupInput;
   String: Scalars['String']['output'];
   UpdateConnectionInput: UpdateConnectionInput;
   UpdateKnowledgeInput: UpdateKnowledgeInput;
   UpdateResourceInput: UpdateResourceInput;
   User: User;
+}>;
+
+export type AuthPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuthPayload'] = ResolversParentTypes['AuthPayload']> = ResolversObject<{
+  token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  user?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
 }>;
 
 export type ConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Connection'] = ResolversParentTypes['Connection']> = ResolversObject<{
@@ -360,6 +387,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteConnection?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteConnectionArgs, 'id'>>;
   deleteKnowledge?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteKnowledgeArgs, 'id'>>;
   deleteResource?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteResourceArgs, 'id'>>;
+  signup?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignupArgs, 'input'>>;
   updateConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationUpdateConnectionArgs, 'id'>>;
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
   updateResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationUpdateResourceArgs, 'id' | 'input'>>;
@@ -395,6 +423,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 }>;
 
 export type Resolvers<ContextType = any> = ResolversObject<{
+  AuthPayload?: AuthPayloadResolvers<ContextType>;
   Connection?: ConnectionResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Knowledge?: KnowledgeResolvers<ContextType>;
