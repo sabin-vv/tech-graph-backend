@@ -4,6 +4,7 @@ import { resolvers } from './graphql/resolvers.js'
 import { expressMiddleware } from '@as-integrations/express5'
 import { readFile } from 'node:fs/promises'
 import cors from 'cors'
+import { createContext, type Context } from './graphql/context.js'
 
 const app = express()
 
@@ -11,7 +12,7 @@ const PORT = 4000
 
 const typeDefs = await readFile(new URL('./graphql/schema.graphql', import.meta.url), 'utf8')
 
-const graphqlServer = new ApolloServer({ typeDefs, resolvers })
+const graphqlServer = new ApolloServer<Context>({ typeDefs, resolvers })
 
 await graphqlServer.start()
 
@@ -22,7 +23,14 @@ app.use(
     }),
 )
 
-app.use('/graphql', expressMiddleware(graphqlServer))
+app.use(
+    '/graphql',
+    expressMiddleware(graphqlServer, {
+        context: async ({ req }) => {
+            return createContext(req)
+        },
+    }),
+)
 
 app.get('/', (req, res) => {
     res.json({

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { type JwtPayload } from 'jsonwebtoken'
 
 const JWt_SECRET = process.env.JWT_SECRET
 
@@ -16,4 +16,14 @@ export const createAuthToken = (userId: String) => {
             expiresIn: '7d',
         },
     )
+}
+
+export const verifyAuthToken = (token: string): string => {
+    const payload = jwt.verify(token, JWt_SECRET) as JwtPayload & {
+        userId?: string
+    }
+
+    if (!payload.userId) throw new Error('Invalid auth token')
+
+    return payload.userId
 }

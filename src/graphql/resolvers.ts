@@ -2,14 +2,25 @@ import { prisma } from '../lib/prisma.js'
 import type { Resolvers } from '../generated/graphql.js'
 import bcrypt from 'bcryptjs'
 import { createAuthToken } from '../lib/auth.js'
+import type { Context } from './context.js'
 
 const includeKnowledgeRelation = {
     source: { include: { user: true } },
     target: { include: { user: true } },
 }
 
-export const resolvers: Resolvers = {
+export const resolvers: Resolvers<Context> = {
     Query: {
+        me: async (_, __, context) => {
+            if (!context.userId) throw new Error('Authentication required')
+
+            return prisma.user.findUnique({
+                where: {
+                    id: context.userId,
+                },
+            })
+        },
+
         knowledge: async () => {
             return await prisma.knowledge.findMany({
                 include: { user: true },
