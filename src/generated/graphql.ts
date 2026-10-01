@@ -81,6 +81,7 @@ export type Mutation = {
   deleteConnection: Scalars['Boolean']['output'];
   deleteKnowledge: Scalars['Boolean']['output'];
   deleteResource: Scalars['Boolean']['output'];
+  login: AuthPayload;
   signup: AuthPayload;
   updateConnection: Connection;
   updateKnowledge: Knowledge;
@@ -118,6 +119,12 @@ export type MutationDeleteResourceArgs = {
 };
 
 
+export type MutationLoginArgs = {
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+};
+
+
 export type MutationSignupArgs = {
   input: SignupInput;
 };
@@ -146,6 +153,7 @@ export type Query = {
   connectionsByKnowledge: Array<Connection>;
   knowledge: Array<Knowledge>;
   knowledgeById?: Maybe<Knowledge>;
+  me?: Maybe<User>;
   resources: Array<Resource>;
   resourcesByKnowledge: Array<Resource>;
 };
@@ -387,6 +395,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   deleteConnection?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteConnectionArgs, 'id'>>;
   deleteKnowledge?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteKnowledgeArgs, 'id'>>;
   deleteResource?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteResourceArgs, 'id'>>;
+  login?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'email' | 'password'>>;
   signup?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignupArgs, 'input'>>;
   updateConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationUpdateConnectionArgs, 'id'>>;
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
@@ -398,6 +407,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   connectionsByKnowledge?: Resolver<Array<ResolversTypes['Connection']>, ParentType, ContextType, RequireFields<QueryConnectionsByKnowledgeArgs, 'id'>>;
   knowledge?: Resolver<Array<ResolversTypes['Knowledge']>, ParentType, ContextType>;
   knowledgeById?: Resolver<Maybe<ResolversTypes['Knowledge']>, ParentType, ContextType, RequireFields<QueryKnowledgeByIdArgs, 'id'>>;
+  me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   resources?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType>;
   resourcesByKnowledge?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType, RequireFields<QueryResourcesByKnowledgeArgs, 'id'>>;
 }>;
