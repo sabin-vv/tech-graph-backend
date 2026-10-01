@@ -203,5 +203,24 @@ export const resolvers: Resolvers<Context> = {
                 user,
             }
         },
+        login: async (_, { email, password }) => {
+            const normalizedEmail = email.trim().toLowerCase()
+            if (!normalizedEmail) throw new Error('Email is required')
+            if (!password) throw new Error('Password is required')
+
+            const user = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+            if (!user) throw new Error('Invalid credentials')
+
+            const validPassword = await bcrypt.compare(password, user.passwordHash)
+
+            if (!validPassword) throw new Error('Invalid credentials')
+
+            const token = createAuthToken(user.id)
+
+            return {
+                token,
+                user,
+            }
+        },
     },
 }

@@ -150,4 +150,6 @@ type Mutation {
     deleteResource(id: ID!): Boolean!
 
     signup(input: SignupInput!): AuthPayload!
+
+    login(email: String!, password: String!): AuthPayload!
 }
