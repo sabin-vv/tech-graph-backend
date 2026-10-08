@@ -26,3 +26,11 @@ export const createContext = async (req: Request): Promise<Context> => {
         }
     }
 }
+
+export const requireAuth = (context: Context): string => {
+    if (!context.userId) {
+        throw new Error('Authentication Required')
+    }
+
+    return context.userId
+}

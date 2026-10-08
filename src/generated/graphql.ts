@@ -33,7 +33,6 @@ export type CreateConnectionInput = {
   relation: Relation;
   sourceId: Scalars['ID']['input'];
   targetId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
 };
 
 export type CreateKnowledgeInput = {
@@ -41,7 +40,6 @@ export type CreateKnowledgeInput = {
   tags: Array<Scalars['String']['input']>;
   title: Scalars['String']['input'];
   type: KnowledgeType;
-  userId: Scalars['ID']['input'];
 };
 
 export type CreateResourceInput = {
@@ -50,7 +48,6 @@ export type CreateResourceInput = {
   title: Scalars['String']['input'];
   type: ResourceType;
   url: Scalars['String']['input'];
-  userId: Scalars['ID']['input'];
 };
 
 export type Knowledge = {

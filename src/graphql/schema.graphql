@@ -93,7 +93,6 @@ input CreateKnowledgeInput {
     description: String!
     type: KnowledgeType!
     tags: [String!]!
-    userId: ID!
 }
 
 input UpdateKnowledgeInput {
@@ -104,7 +103,6 @@ input UpdateKnowledgeInput {
 }
 
 input CreateConnectionInput {
-    userId: ID!
     sourceId: ID!
     targetId: ID!
     relation: Relation!
@@ -115,7 +113,6 @@ input UpdateConnectionInput {
 }
 
 input CreateResourceInput {
-    userId: ID!
     knowledgeId: ID!
     title: String!
     url: String!
