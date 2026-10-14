@@ -1,152 +1,156 @@
 scalar DateTime
 
 type User {
-    id: ID!
-    name: String!
-    email: String!
+  id: ID!
+  name: String!
+  email: String!
+  jobTitle: String
+  location: String
+  bio: String
+  skills: [String!]!
+  avatarUrl: String
 }
 
 enum KnowledgeType {
-    technology
-    concept
-    algorithm
-    database
+  technology
+  concept
+  algorithm
+  database
 }
+
 enum ResourceType {
-    article
-    video
-    documentation
-    course
-    github
-    other
+  article
+  video
+  documentation
+  course
+  github
+  other
 }
 
 enum Relation {
-    uses
-    related_to
-    part_of
-    depends_on
-    built_with
-    extends
+  uses
+  related_to
+  part_of
+  depends_on
+  built_with
+  extends
 }
 
 type Knowledge {
-    id: ID!
-    title: String!
-    description: String!
-    type: KnowledgeType!
-    tags: [String!]!
-    user: User!
-    createdAt: DateTime!
-    updatedAt: DateTime!
+  id: ID!
+  title: String!
+  description: String!
+  type: KnowledgeType!
+  tags: [String!]!
+  user: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type Connection {
-    id: ID!
-    userId: ID!
-    source: Knowledge!
-    target: Knowledge!
-    relation: Relation!
-    createdAt: DateTime!
-    updatedAt: DateTime!
+  id: ID!
+  userId: ID!
+  source: Knowledge!
+  target: Knowledge!
+  relation: Relation!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type Resource {
-    id: ID!
-    userId: ID!
-    knowledgeId: ID!
-    title: String!
-    url: String!
-    type: ResourceType!
-    description: String!
-    user: User!
-    knowledge: Knowledge!
-    createdAt: DateTime!
-    updatedAt: DateTime!
+  id: ID!
+  userId: ID!
+  knowledgeId: ID!
+  title: String!
+  url: String!
+  type: ResourceType!
+  description: String!
+  user: User!
+  knowledge: Knowledge!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 input SignupInput {
-    name: String!
-    email: String!
-    password: String!
+  name: String!
+  email: String!
+  password: String!
 }
+
 type AuthPayload {
-    token: String!
-    user: User!
+  token: String!
+  user: User!
 }
 
 type Query {
-    knowledge: [Knowledge!]!
-    knowledgeById(id: ID!): Knowledge
-
-    connections: [Connection!]!
-    connectionsByKnowledge(id: ID!): [Connection!]!
-
-    resources: [Resource!]!
-    resourcesByKnowledge(id: ID!): [Resource!]!
-
-    me: User
+  knowledge: [Knowledge!]!
+  knowledgeById(id: ID!): Knowledge
+  connections: [Connection!]!
+  connectionsByKnowledge(id: ID!): [Connection!]!
+  resources: [Resource!]!
+  resourcesByKnowledge(id: ID!): [Resource!]!
+  me: User
 }
 
 input CreateKnowledgeInput {
-    title: String!
-    description: String!
-    type: KnowledgeType!
-    tags: [String!]!
+  title: String!
+  description: String!
+  type: KnowledgeType!
+  tags: [String!]!
 }
 
 input UpdateKnowledgeInput {
-    title: String
-    description: String
-    type: KnowledgeType
-    tags: [String!]
+  title: String
+  description: String
+  type: KnowledgeType
+  tags: [String!]
 }
 
 input CreateConnectionInput {
-    sourceId: ID!
-    targetId: ID!
-    relation: Relation!
+  sourceId: ID!
+  targetId: ID!
+  relation: Relation!
 }
 
 input UpdateConnectionInput {
-    relation: Relation
+  relation: Relation
 }
 
 input CreateResourceInput {
-    knowledgeId: ID!
-    title: String!
-    url: String!
-    type: ResourceType!
-    description: String!
+  knowledgeId: ID!
+  title: String!
+  url: String!
+  type: ResourceType!
+  description: String!
 }
 
 input UpdateResourceInput {
-    title: String
-    url: String
-    type: ResourceType
-    description: String
+  title: String
+  url: String
+  type: ResourceType
+  description: String
+}
+
+input UpdateProfileInput {
+  name: String
+  jobTitle: String
+  location: String
+  bio: String
+  skills: [String!]
+  avatarUrl: String
 }
 
 type Mutation {
-    createKnowledge(input: CreateKnowledgeInput!): Knowledge!
-
-    updateKnowledge(id: ID!, input: UpdateKnowledgeInput!): Knowledge!
-
-    deleteKnowledge(id: ID!): Boolean!
-
-    createConnection(input: CreateConnectionInput!): Connection!
-
-    updateConnection(id: ID!, input: UpdateConnectionInput): Connection!
-
-    deleteConnection(id: ID!): Boolean!
-
-    createResource(input: CreateResourceInput!): Resource!
-
-    updateResource(id: ID!, input: UpdateResourceInput!): Resource!
-
-    deleteResource(id: ID!): Boolean!
-
-    signup(input: SignupInput!): AuthPayload!
-
-    login(email: String!, password: String!): AuthPayload!
+  createKnowledge(input: CreateKnowledgeInput!): Knowledge!
+  updateKnowledge(id: ID!, input: UpdateKnowledgeInput!): Knowledge!
+  deleteKnowledge(id: ID!): Boolean!
+  createConnection(input: CreateConnectionInput!): Connection!
+  updateConnection(id: ID!, input: UpdateConnectionInput): Connection!
+  deleteConnection(id: ID!): Boolean!
+  createResource(input: CreateResourceInput!): Resource!
+  updateResource(id: ID!, input: UpdateResourceInput!): Resource!
+  deleteResource(id: ID!): Boolean!
+  signup(input: SignupInput!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  updateProfile(input: UpdateProfileInput!): User!
 }
