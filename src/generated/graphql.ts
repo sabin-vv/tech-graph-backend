@@ -82,6 +82,7 @@ export type Mutation = {
   signup: AuthPayload;
   updateConnection: Connection;
   updateKnowledge: Knowledge;
+  updateProfile: User;
   updateResource: Resource;
 };
 
@@ -136,6 +137,11 @@ export type MutationUpdateConnectionArgs = {
 export type MutationUpdateKnowledgeArgs = {
   id: Scalars['ID']['input'];
   input: UpdateKnowledgeInput;
+};
+
+
+export type MutationUpdateProfileArgs = {
+  input: UpdateProfileInput;
 };
 
 
@@ -222,6 +228,15 @@ export type UpdateKnowledgeInput = {
   type?: InputMaybe<KnowledgeType>;
 };
 
+export type UpdateProfileInput = {
+  avatarUrl?: InputMaybe<Scalars['String']['input']>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  jobTitle?: InputMaybe<Scalars['String']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  skills?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type UpdateResourceInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
@@ -231,9 +246,14 @@ export type UpdateResourceInput = {
 
 export type User = {
   __typename?: 'User';
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  bio?: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  jobTitle?: Maybe<Scalars['String']['output']>;
+  location?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  skills: Array<Scalars['String']['output']>;
 };
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
@@ -329,6 +349,7 @@ export type ResolversTypes = ResolversObject<{
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   UpdateConnectionInput: UpdateConnectionInput;
   UpdateKnowledgeInput: UpdateKnowledgeInput;
+  UpdateProfileInput: UpdateProfileInput;
   UpdateResourceInput: UpdateResourceInput;
   User: ResolverTypeWrapper<User>;
 }>;
@@ -351,6 +372,7 @@ export type ResolversParentTypes = ResolversObject<{
   String: Scalars['String']['output'];
   UpdateConnectionInput: UpdateConnectionInput;
   UpdateKnowledgeInput: UpdateKnowledgeInput;
+  UpdateProfileInput: UpdateProfileInput;
   UpdateResourceInput: UpdateResourceInput;
   User: User;
 }>;
@@ -396,6 +418,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   signup?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignupArgs, 'input'>>;
   updateConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationUpdateConnectionArgs, 'id'>>;
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
+  updateProfile?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
   updateResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationUpdateResourceArgs, 'id' | 'input'>>;
 }>;
 
@@ -424,9 +447,14 @@ export type ResourceResolvers<ContextType = any, ParentType extends ResolversPar
 }>;
 
 export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = ResolversObject<{
+  avatarUrl?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  bio?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  jobTitle?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  location?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  skills?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type Resolvers<ContextType = any> = ResolversObject<{
