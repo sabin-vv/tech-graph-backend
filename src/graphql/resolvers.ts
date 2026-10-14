@@ -339,5 +339,25 @@ export const resolvers: Resolvers<Context> = {
                 user,
             }
         },
+        updateProfile:async (_,{input},context)=>{
+            const userId =requireAuth(context)
+
+            const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
+            if('name' in data) {
+                const name  = String(data.name).trim()
+
+                if(!name) {
+                    throw new Error('Name cannot be empty')
+                }
+                data.name = name
+            }
+            return prisma.user.update({
+                where:{
+                    id:userId
+                },
+                data,
+            })
+        }
+
     },
 }
