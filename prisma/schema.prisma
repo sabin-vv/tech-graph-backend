@@ -39,6 +39,12 @@ model User {
 
   passwordHash String
 
+  jobTitle  String?
+  location  String?
+  bio       String?
+  skills    String[] @default([])
+  avatarUrl String?
+
   knowledge   Knowledge[]
   connections Connection[]
   resources   Resource[]
