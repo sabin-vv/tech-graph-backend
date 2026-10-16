@@ -82,6 +82,12 @@ type AuthPayload {
   user: User!
 }
 
+type AvatarUploadUrlPayload {
+  uploadUrl: String!
+  contentType: String!
+  expiresIn: Int!
+}
+
 type Query {
   knowledge: [Knowledge!]!
   knowledgeById(id: ID!): Knowledge
@@ -133,11 +139,16 @@ input UpdateResourceInput {
 
 input UpdateProfileInput {
   name: String
+  email: String
   jobTitle: String
   location: String
   bio: String
   skills: [String!]
-  avatarUrl: String
+}
+
+input CreateAvatarUploadUrlInput {
+  contentType: String!
+  size: Int!
 }
 
 type Mutation {
@@ -153,4 +164,6 @@ type Mutation {
   signup(input: SignupInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   updateProfile(input: UpdateProfileInput!): User!
+  createAvatarUploadUrl(input: CreateAvatarUploadUrlInput!): AvatarUploadUrlPayload!
+  confirmAvatarUpload: User!
 }
