@@ -339,21 +339,41 @@ export const resolvers: Resolvers<Context> = {
                 user,
             }
         },
-        updateProfile:async (_,{input},context)=>{
-            const userId =requireAuth(context)
+        updateProfile: async (_, { input }, context) => {
+            const userId = requireAuth(context)
 
-            const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
-            if('name' in data) {
-                const name  = String(data.name).trim()
+            const data = Object.fromEntries(
+                Object.entries(input).filter(([, v]) => v != null),
+            )
 
-                if(!name) {
+            if ('name' in data) {
+                const name = String(data.name).trim()
+
+                if (!name) {
                     throw new Error('Name cannot be empty')
                 }
                 data.name = name
             }
+
+            if ('email' in data) {
+                const email = String(data.email).trim().toLowerCase()
+
+                if (!email) {
+                    throw new Error('Email cannot be empty')
+                }
+
+                const existingUser = await prisma.user.findUnique({ where: { email } })
+
+                if (existingUser && existingUser.id !== userId) {
+                    throw new Error('This Email is already registered')
+                }
+
+                data.email = email
+            }
+
             return prisma.user.update({
-                where:{
-                    id:userId
+                where: {
+                    id: userId,
                 },
                 data,
             })
