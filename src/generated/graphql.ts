@@ -18,6 +18,13 @@ export type AuthPayload = {
   user: User;
 };
 
+export type AvatarUploadUrlPayload = {
+  __typename?: 'AvatarUploadUrlPayload';
+  contentType: Scalars['String']['output'];
+  expiresIn: Scalars['Int']['output'];
+  uploadUrl: Scalars['String']['output'];
+};
+
 export type Connection = {
   __typename?: 'Connection';
   createdAt: Scalars['DateTime']['output'];
@@ -27,6 +34,11 @@ export type Connection = {
   target: Knowledge;
   updatedAt: Scalars['DateTime']['output'];
   userId: Scalars['ID']['output'];
+};
+
+export type CreateAvatarUploadUrlInput = {
+  contentType: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
 };
 
 export type CreateConnectionInput = {
@@ -72,6 +84,8 @@ export const KnowledgeType = {
 export type KnowledgeType = typeof KnowledgeType[keyof typeof KnowledgeType];
 export type Mutation = {
   __typename?: 'Mutation';
+  confirmAvatarUpload: User;
+  createAvatarUploadUrl: AvatarUploadUrlPayload;
   createConnection: Connection;
   createKnowledge: Knowledge;
   createResource: Resource;
@@ -84,6 +98,11 @@ export type Mutation = {
   updateKnowledge: Knowledge;
   updateProfile: User;
   updateResource: Resource;
+};
+
+
+export type MutationCreateAvatarUploadUrlArgs = {
+  input: CreateAvatarUploadUrlInput;
 };
 
 
@@ -229,8 +248,8 @@ export type UpdateKnowledgeInput = {
 };
 
 export type UpdateProfileInput = {
-  avatarUrl?: InputMaybe<Scalars['String']['input']>;
   bio?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
   jobTitle?: InputMaybe<Scalars['String']['input']>;
   location?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
@@ -331,13 +350,16 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
   AuthPayload: ResolverTypeWrapper<AuthPayload>;
+  AvatarUploadUrlPayload: ResolverTypeWrapper<AvatarUploadUrlPayload>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Connection: ResolverTypeWrapper<Connection>;
+  CreateAvatarUploadUrlInput: CreateAvatarUploadUrlInput;
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   CreateResourceInput: CreateResourceInput;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
+  Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   Knowledge: ResolverTypeWrapper<Knowledge>;
   KnowledgeType: KnowledgeType;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
@@ -357,13 +379,16 @@ export type ResolversTypes = ResolversObject<{
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
   AuthPayload: AuthPayload;
+  AvatarUploadUrlPayload: AvatarUploadUrlPayload;
   Boolean: Scalars['Boolean']['output'];
   Connection: Connection;
+  CreateAvatarUploadUrlInput: CreateAvatarUploadUrlInput;
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   CreateResourceInput: CreateResourceInput;
   DateTime: Scalars['DateTime']['output'];
   ID: Scalars['ID']['output'];
+  Int: Scalars['Int']['output'];
   Knowledge: Knowledge;
   Mutation: Record<PropertyKey, never>;
   Query: Record<PropertyKey, never>;
@@ -380,6 +405,12 @@ export type ResolversParentTypes = ResolversObject<{
 export type AuthPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuthPayload'] = ResolversParentTypes['AuthPayload']> = ResolversObject<{
   token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   user?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+}>;
+
+export type AvatarUploadUrlPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['AvatarUploadUrlPayload'] = ResolversParentTypes['AvatarUploadUrlPayload']> = ResolversObject<{
+  contentType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  expiresIn?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  uploadUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type ConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Connection'] = ResolversParentTypes['Connection']> = ResolversObject<{
@@ -408,6 +439,8 @@ export type KnowledgeResolvers<ContextType = any, ParentType extends ResolversPa
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
+  confirmAvatarUpload?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  createAvatarUploadUrl?: Resolver<ResolversTypes['AvatarUploadUrlPayload'], ParentType, ContextType, RequireFields<MutationCreateAvatarUploadUrlArgs, 'input'>>;
   createConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationCreateConnectionArgs, 'input'>>;
   createKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationCreateKnowledgeArgs, 'input'>>;
   createResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationCreateResourceArgs, 'input'>>;
@@ -459,6 +492,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 
 export type Resolvers<ContextType = any> = ResolversObject<{
   AuthPayload?: AuthPayloadResolvers<ContextType>;
+  AvatarUploadUrlPayload?: AvatarUploadUrlPayloadResolvers<ContextType>;
   Connection?: ConnectionResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Knowledge?: KnowledgeResolvers<ContextType>;
