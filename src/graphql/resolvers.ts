@@ -161,20 +161,43 @@ export const resolvers: Resolvers<Context> = {
         deleteKnowledge: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            const existingKnowledge = await prisma.knowledge.findFirst({
-                where: {
-                    id,
-                    userId,
-                },
+            return await prisma.$transaction(async (transaction) => {
+                const existingKnowledge = await transaction.knowledge.findFirst({
+                    where: {
+                        id,
+                        userId,
+                    },
+                    select: {
+                        id: true,
+                    },
+                })
+
+                if (!existingKnowledge) {
+                    throw new Error('Knowledge not found')
+                }
+
+                await transaction.connection.deleteMany({
+                    where: {
+                        userId,
+                        OR: [{ sourceId: id }, { targetId: id }],
+                    },
+                })
+
+                await transaction.resource.deleteMany({
+                    where: {
+                        knowledgeId: id,
+                        userId,
+                    },
+                })
+
+                await transaction.knowledge.delete({
+                    where: {
+                        id,
+                    },
+                })
+
+                return true
             })
-
-            if (!existingKnowledge) {
-                throw new Error('Knowledge not found')
-            }
-
-            await prisma.knowledge.delete({ where: { id } })
-
-            return true
         },
 
         createConnection: async (_, { input }, context) => {
