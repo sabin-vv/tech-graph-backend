@@ -115,20 +115,93 @@ export const resolvers: Resolvers<Context> = {
                 },
             })
         },
+        recentActivity: async (_, args, context) => {
+            const userId = requireAuth(context)
+            const limit = Math.max(1, Math.min(args.limit ?? 20, 50))
+            let cursorFilter = {}
+
+            if (args.cursor) {
+                try {
+                    const decoded = Buffer.from(args.cursor, 'base64url').toString('utf8')
+                    const parsed: unknown = JSON.parse(decoded)
+                    if (
+                        typeof parsed !== 'object' ||
+                        parsed === null ||
+                        !('id' in parsed) ||
+                        typeof parsed.id !== 'string' ||
+                        !('createdAt' in parsed) ||
+                        typeof parsed.createdAt !== 'string'
+                    ) {
+                        throw new Error('Invalid activity cursor')
+                    }
+
+                    const createdAt = new Date(parsed.createdAt)
+                    if (Number.isNaN(createdAt.getTime())) {
+                        throw new Error('Invalid activity cursor')
+                    }
+
+                    cursorFilter = {
+                        OR: [
+                            { createdAt: { lt: createdAt } },
+                            { createdAt, id: { lt: parsed.id } },
+                        ],
+                    }
+                } catch {
+                    throw new Error('Invalid activity cursor')
+                }
+            }
+
+            const records = await prisma.activity.findMany({
+                where: {
+                    userId,
+                    ...cursorFilter,
+                },
+                orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+                take: limit + 1,
+            })
+
+            const hasMore = records.length > limit
+            const items = hasMore ? records.slice(0, limit) : records
+            const lastItem = items.at(-1)
+            const nextCursor =
+                hasMore && lastItem
+                    ? Buffer.from(
+                          JSON.stringify({
+                              createdAt: lastItem.createdAt.toISOString(),
+                              id: lastItem.id,
+                          }),
+                      ).toString('base64url')
+                    : null
+
+            return { items, nextCursor, hasMore }
+        },
     },
 
     Mutation: {
         createKnowledge: async (_, { input }, context) => {
             const userId = requireAuth(context)
 
-            return await prisma.knowledge.create({
-                data: {
-                    ...input,
-                    userId,
-                },
-                include: {
-                    user: true,
-                },
+            return prisma.$transaction(async (transaction) => {
+                const knowledge = await transaction.knowledge.create({
+                    data: {
+                        ...input,
+                        userId,
+                    },
+                    include: {
+                        user: true,
+                    },
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'created',
+                        entityType: 'knowledge',
+                        summary: knowledge.title,
+                    },
+                })
+
+                return knowledge
             })
         },
 
@@ -147,14 +220,24 @@ export const resolvers: Resolvers<Context> = {
             }
 
             const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
-            return await prisma.knowledge.update({
-                where: {
-                    id,
-                },
-                data,
-                include: {
-                    user: true,
-                },
+
+            return prisma.$transaction(async (transaction) => {
+                const knowledge = await transaction.knowledge.update({
+                    where: { id },
+                    data,
+                    include: { user: true },
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'updated',
+                        entityType: 'knowledge',
+                        summary: knowledge.title,
+                    },
+                })
+
+                return knowledge
             })
         },
 
@@ -169,6 +252,7 @@ export const resolvers: Resolvers<Context> = {
                     },
                     select: {
                         id: true,
+                        title: true,
                     },
                 })
 
@@ -196,6 +280,15 @@ export const resolvers: Resolvers<Context> = {
                     },
                 })
 
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'knowledge',
+                        summary: existingKnowledge.title,
+                    },
+                })
+
                 return true
             })
         },
@@ -212,44 +305,89 @@ export const resolvers: Resolvers<Context> = {
                 },
                 select: {
                     id: true,
+                    title: true,
                 },
             })
             if (knowledge.length !== 2) {
                 throw new Error('Knowledge not found')
             }
 
-            return await prisma.connection.create({
-                data: {
-                    ...input,
-                    userId,
-                },
-                include: includeKnowledgeRelation,
+            const source = knowledge.find((item) => item.id === input.sourceId)
+            const target = knowledge.find((item) => item.id === input.targetId)
+            if (!source || !target) {
+                throw new Error('Knowledge not found')
+            }
+
+            return prisma.$transaction(async (transaction) => {
+                const connection = await transaction.connection.create({
+                    data: {
+                        ...input,
+                        userId,
+                    },
+                    include: includeKnowledgeRelation,
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'created',
+                        entityType: 'connection',
+                        summary: `${source.title} → ${input.relation} → ${target.title}`,
+                    },
+                })
+
+                return connection
             })
         },
 
         updateConnection: async (_, { id, input }, context) => {
             const userId = requireAuth(context)
 
-            return await prisma.connection.update({
-                where: {
-                    id,
-                    userId,
-                },
-                data: {
-                    ...(input?.relation != null && { relation: input.relation }),
-                },
-                include: includeKnowledgeRelation,
+            return prisma.$transaction(async (transaction) => {
+                const connection = await transaction.connection.update({
+                    where: {
+                        id,
+                        userId,
+                    },
+                    data: {
+                        ...(input?.relation != null && { relation: input.relation }),
+                    },
+                    include: includeKnowledgeRelation,
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'updated',
+                        entityType: 'connection',
+                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
+                    },
+                })
+
+                return connection
             })
         },
 
         deleteConnection: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            await prisma.connection.delete({
-                where: {
-                    id,
-                    userId,
-                },
+            await prisma.$transaction(async (transaction) => {
+                const connection = await transaction.connection.delete({
+                    where: {
+                        id,
+                        userId,
+                    },
+                    include: includeKnowledgeRelation,
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'connection',
+                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
+                    },
+                })
             })
 
             return true
@@ -269,16 +407,29 @@ export const resolvers: Resolvers<Context> = {
                 throw new Error('Knowledge not found')
             }
 
-            return await prisma.resource.create({
-                data: { ...input, userId },
-                include: {
-                    user: true,
-                    knowledge: {
-                        include: {
-                            user: true,
+            return prisma.$transaction(async (transaction) => {
+                const resource = await transaction.resource.create({
+                    data: { ...input, userId },
+                    include: {
+                        user: true,
+                        knowledge: {
+                            include: {
+                                user: true,
+                            },
                         },
                     },
-                },
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'created',
+                        entityType: 'resource',
+                        summary: resource.title,
+                    },
+                })
+
+                return resource
             })
         },
 
@@ -287,25 +438,49 @@ export const resolvers: Resolvers<Context> = {
 
             const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
 
-            return await prisma.resource.update({
-                where: { id, userId },
-                data,
-                include: {
-                    user: true,
-                    knowledge: {
-                        include: {
-                            user: true,
+            return prisma.$transaction(async (transaction) => {
+                const resource = await transaction.resource.update({
+                    where: { id, userId },
+                    data,
+                    include: {
+                        user: true,
+                        knowledge: {
+                            include: {
+                                user: true,
+                            },
                         },
                     },
-                },
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'updated',
+                        entityType: 'resource',
+                        summary: resource.title,
+                    },
+                })
+
+                return resource
             })
         },
 
         deleteResource: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            await prisma.resource.delete({
-                where: { id, userId },
+            await prisma.$transaction(async (transaction) => {
+                const resource = await transaction.resource.delete({
+                    where: { id, userId },
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'resource',
+                        summary: resource.title,
+                    },
+                })
             })
             return true
         },
@@ -394,11 +569,24 @@ export const resolvers: Resolvers<Context> = {
                 data.email = email
             }
 
-            return prisma.user.update({
-                where: {
-                    id: userId,
-                },
-                data,
+            return prisma.$transaction(async (transaction) => {
+                const user = await transaction.user.update({
+                    where: {
+                        id: userId,
+                    },
+                    data,
+                })
+
+                await transaction.activity.create({
+                    data: {
+                        userId,
+                        action: 'updated',
+                        entityType: 'profile',
+                        summary: 'Updated profile',
+                    },
+                })
+
+                return user
             })
         }
 
