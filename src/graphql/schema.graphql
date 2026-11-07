@@ -36,6 +36,19 @@ enum Relation {
   extends
 }
 
+enum ActivityAction {
+  created
+  updated
+  deleted
+}
+
+enum ActivityEntity {
+  knowledge
+  connection
+  resource
+  profile
+}
+
 type Knowledge {
   id: ID!
   title: String!
@@ -45,6 +58,20 @@ type Knowledge {
   user: User!
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+type Activity {
+  id: ID!
+  action: ActivityAction!
+  entityType: ActivityEntity!
+  summary: String!
+  createdAt: DateTime!
+}
+
+type ActivityPage {
+  items: [Activity!]!
+  nextCursor: String
+  hasMore: Boolean!
 }
 
 type Connection {
@@ -95,6 +122,7 @@ type Query {
   connectionsByKnowledge(id: ID!): [Connection!]!
   resources: [Resource!]!
   resourcesByKnowledge(id: ID!): [Resource!]!
+  recentActivity(limit: Int = 20, cursor: String): ActivityPage!
   me: User
 }
 

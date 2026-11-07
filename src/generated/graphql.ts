@@ -12,6 +12,37 @@ export type Scalars = {
   DateTime: { input: Date; output: Date; }
 };
 
+export type Activity = {
+  __typename?: 'Activity';
+  action: ActivityAction;
+  createdAt: Scalars['DateTime']['output'];
+  entityType: ActivityEntity;
+  id: Scalars['ID']['output'];
+  summary: Scalars['String']['output'];
+};
+
+export const ActivityAction = {
+  Created: 'created',
+  Deleted: 'deleted',
+  Updated: 'updated'
+} as const;
+
+export type ActivityAction = typeof ActivityAction[keyof typeof ActivityAction];
+export const ActivityEntity = {
+  Connection: 'connection',
+  Knowledge: 'knowledge',
+  Profile: 'profile',
+  Resource: 'resource'
+} as const;
+
+export type ActivityEntity = typeof ActivityEntity[keyof typeof ActivityEntity];
+export type ActivityPage = {
+  __typename?: 'ActivityPage';
+  hasMore: Scalars['Boolean']['output'];
+  items: Array<Activity>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
+};
+
 export type AuthPayload = {
   __typename?: 'AuthPayload';
   token: Scalars['String']['output'];
@@ -176,6 +207,7 @@ export type Query = {
   knowledge: Array<Knowledge>;
   knowledgeById?: Maybe<Knowledge>;
   me?: Maybe<User>;
+  recentActivity: ActivityPage;
   resources: Array<Resource>;
   resourcesByKnowledge: Array<Resource>;
 };
@@ -188,6 +220,12 @@ export type QueryConnectionsByKnowledgeArgs = {
 
 export type QueryKnowledgeByIdArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryRecentActivityArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -349,6 +387,10 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
+  Activity: ResolverTypeWrapper<Activity>;
+  ActivityAction: ActivityAction;
+  ActivityEntity: ActivityEntity;
+  ActivityPage: ResolverTypeWrapper<ActivityPage>;
   AuthPayload: ResolverTypeWrapper<AuthPayload>;
   AvatarUploadUrlPayload: ResolverTypeWrapper<AvatarUploadUrlPayload>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -378,6 +420,8 @@ export type ResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
+  Activity: Activity;
+  ActivityPage: ActivityPage;
   AuthPayload: AuthPayload;
   AvatarUploadUrlPayload: AvatarUploadUrlPayload;
   Boolean: Scalars['Boolean']['output'];
@@ -400,6 +444,20 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateProfileInput: UpdateProfileInput;
   UpdateResourceInput: UpdateResourceInput;
   User: User;
+}>;
+
+export type ActivityResolvers<ContextType = any, ParentType extends ResolversParentTypes['Activity'] = ResolversParentTypes['Activity']> = ResolversObject<{
+  action?: Resolver<ResolversTypes['ActivityAction'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  entityType?: Resolver<ResolversTypes['ActivityEntity'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  summary?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type ActivityPageResolvers<ContextType = any, ParentType extends ResolversParentTypes['ActivityPage'] = ResolversParentTypes['ActivityPage']> = ResolversObject<{
+  hasMore?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['Activity']>, ParentType, ContextType>;
+  nextCursor?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
 export type AuthPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['AuthPayload'] = ResolversParentTypes['AuthPayload']> = ResolversObject<{
@@ -461,6 +519,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   knowledge?: Resolver<Array<ResolversTypes['Knowledge']>, ParentType, ContextType>;
   knowledgeById?: Resolver<Maybe<ResolversTypes['Knowledge']>, ParentType, ContextType, RequireFields<QueryKnowledgeByIdArgs, 'id'>>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  recentActivity?: Resolver<ResolversTypes['ActivityPage'], ParentType, ContextType, RequireFields<QueryRecentActivityArgs, 'limit'>>;
   resources?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType>;
   resourcesByKnowledge?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType, RequireFields<QueryResourcesByKnowledgeArgs, 'id'>>;
 }>;
@@ -491,6 +550,8 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
 }>;
 
 export type Resolvers<ContextType = any> = ResolversObject<{
+  Activity?: ActivityResolvers<ContextType>;
+  ActivityPage?: ActivityPageResolvers<ContextType>;
   AuthPayload?: AuthPayloadResolvers<ContextType>;
   AvatarUploadUrlPayload?: AvatarUploadUrlPayloadResolvers<ContextType>;
   Connection?: ConnectionResolvers<ContextType>;
