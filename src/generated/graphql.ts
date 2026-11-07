@@ -93,6 +93,14 @@ export type CreateResourceInput = {
   url: Scalars['String']['input'];
 };
 
+export type DashboardSummary = {
+  __typename?: 'DashboardSummary';
+  connectionCount: Scalars['Int']['output'];
+  knowledgeCount: Scalars['Int']['output'];
+  resourceCount: Scalars['Int']['output'];
+  uniqueTagCount: Scalars['Int']['output'];
+};
+
 export type Knowledge = {
   __typename?: 'Knowledge';
   createdAt: Scalars['DateTime']['output'];
@@ -204,6 +212,7 @@ export type Query = {
   __typename?: 'Query';
   connections: Array<Connection>;
   connectionsByKnowledge: Array<Connection>;
+  dashboardSummary: DashboardSummary;
   knowledge: Array<Knowledge>;
   knowledgeById?: Maybe<Knowledge>;
   me?: Maybe<User>;
@@ -399,6 +408,7 @@ export type ResolversTypes = ResolversObject<{
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   CreateResourceInput: CreateResourceInput;
+  DashboardSummary: ResolverTypeWrapper<DashboardSummary>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -430,6 +440,7 @@ export type ResolversParentTypes = ResolversObject<{
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
   CreateResourceInput: CreateResourceInput;
+  DashboardSummary: DashboardSummary;
   DateTime: Scalars['DateTime']['output'];
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
@@ -481,6 +492,13 @@ export type ConnectionResolvers<ContextType = any, ParentType extends ResolversP
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
+export type DashboardSummaryResolvers<ContextType = any, ParentType extends ResolversParentTypes['DashboardSummary'] = ResolversParentTypes['DashboardSummary']> = ResolversObject<{
+  connectionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  knowledgeCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  resourceCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  uniqueTagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export interface DateTimeScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['DateTime'], any> {
   name: 'DateTime';
 }
@@ -516,6 +534,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
   connections?: Resolver<Array<ResolversTypes['Connection']>, ParentType, ContextType>;
   connectionsByKnowledge?: Resolver<Array<ResolversTypes['Connection']>, ParentType, ContextType, RequireFields<QueryConnectionsByKnowledgeArgs, 'id'>>;
+  dashboardSummary?: Resolver<ResolversTypes['DashboardSummary'], ParentType, ContextType>;
   knowledge?: Resolver<Array<ResolversTypes['Knowledge']>, ParentType, ContextType>;
   knowledgeById?: Resolver<Maybe<ResolversTypes['Knowledge']>, ParentType, ContextType, RequireFields<QueryKnowledgeByIdArgs, 'id'>>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
@@ -555,6 +574,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AuthPayload?: AuthPayloadResolvers<ContextType>;
   AvatarUploadUrlPayload?: AvatarUploadUrlPayloadResolvers<ContextType>;
   Connection?: ConnectionResolvers<ContextType>;
+  DashboardSummary?: DashboardSummaryResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Knowledge?: KnowledgeResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;

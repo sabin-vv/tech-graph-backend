@@ -175,6 +175,31 @@ export const resolvers: Resolvers<Context> = {
 
             return { items, nextCursor, hasMore }
         },
+
+        dashboardSummary: async (_, __, context) => {
+            const userId = requireAuth(context)
+
+            const [knowledgeCount, connectionCount, resourceCount, tagCounts] =
+                await Promise.all([
+                    prisma.knowledge.count({ where: { userId } }),
+                    prisma.connection.count({ where: { userId } }),
+                    prisma.resource.count({ where: { userId } }),
+                    prisma.$queryRaw<Array<{ count: number }>>`
+                        SELECT COUNT(DISTINCT LOWER(BTRIM(tag)))::int AS count
+                        FROM "Knowledge"
+                        CROSS JOIN LATERAL UNNEST("tags") AS tags(tag)
+                        WHERE "userId" = ${userId}
+                          AND BTRIM(tag) <> ''
+                    `,
+                ])
+
+            return {
+                knowledgeCount,
+                connectionCount,
+                resourceCount,
+                uniqueTagCount: tagCounts[0]?.count ?? 0,
+            }
+        },
     },
 
     Mutation: {

@@ -74,6 +74,13 @@ type ActivityPage {
   hasMore: Boolean!
 }
 
+type DashboardSummary {
+  knowledgeCount: Int!
+  connectionCount: Int!
+  resourceCount: Int!
+  uniqueTagCount: Int!
+}
+
 type Connection {
   id: ID!
   userId: ID!
@@ -123,6 +130,7 @@ type Query {
   resources: [Resource!]!
   resourcesByKnowledge(id: ID!): [Resource!]!
   recentActivity(limit: Int = 20, cursor: String): ActivityPage!
+  dashboardSummary: DashboardSummary!
   me: User
 }
 
