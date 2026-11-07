@@ -32,6 +32,19 @@ enum ResourceType {
   other
 }
 
+enum ActivityAction {
+  created
+  updated
+  deleted
+}
+
+enum ActivityEntity {
+  knowledge
+  connection
+  resource
+  profile
+}
+
 model User {
   id    String @id @default(uuid())
   name  String
@@ -48,6 +61,20 @@ model User {
   knowledge   Knowledge[]
   connections Connection[]
   resources   Resource[]
+  activities  Activity[]
+}
+
+model Activity {
+  id         String         @id @default(uuid())
+  userId     String
+  action     ActivityAction
+  entityType ActivityEntity
+  summary    String
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Knowledge {
