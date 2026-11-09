@@ -9,6 +9,24 @@ const includeKnowledgeRelation = {
     target: { include: { user: true } },
 }
 
+const defaultUserSettings = {
+    language: 'en',
+    timeZone: 'local',
+    dateFormat: 'yyyy-MM-dd',
+    theme: 'dark',
+    accentColor: 'violet',
+    inAppNotifications: false,
+    emailNotifications: false,
+}
+
+const userSettingsOptions = {
+    language: ['en', 'es', 'ko', 'ja', 'hi', 'fr', 'de'],
+    timeZone: ['local', 'UTC'],
+    dateFormat: ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy'],
+    theme: ['light', 'dark'],
+    accentColor: ['violet', 'blue', 'teal', 'amber'],
+} as const
+
 export const resolvers: Resolvers<Context> = {
     Query: {
         me: async (_, __, context) => {
@@ -200,9 +218,53 @@ export const resolvers: Resolvers<Context> = {
                 uniqueTagCount: tagCounts[0]?.count ?? 0,
             }
         },
+
+        userSettings: async (_, __, context) => {
+            const userId = requireAuth(context)
+            const settings = await prisma.userSettings.findUnique({
+                where: { userId },
+            })
+
+            return settings ?? defaultUserSettings
+        },
     },
 
     Mutation: {
+        updateUserSettings: async (_, { input }, context) => {
+            const userId = requireAuth(context)
+            const data = {
+                ...(input.language != null && { language: input.language }),
+                ...(input.timeZone != null && { timeZone: input.timeZone }),
+                ...(input.dateFormat != null && { dateFormat: input.dateFormat }),
+                ...(input.theme != null && { theme: input.theme }),
+                ...(input.accentColor != null && { accentColor: input.accentColor }),
+                ...(input.inAppNotifications != null && {
+                    inAppNotifications: input.inAppNotifications,
+                }),
+                ...(input.emailNotifications != null && {
+                    emailNotifications: input.emailNotifications,
+                }),
+            }
+
+            for (const field of ['language', 'timeZone', 'dateFormat', 'theme', 'accentColor'] as const) {
+                const value = input[field]
+                const allowedValues: readonly string[] = userSettingsOptions[field]
+                if (value != null && !allowedValues.includes(value)) {
+                    throw new Error(`Invalid ${field} setting`)
+                }
+            }
+
+            return prisma.userSettings.upsert({
+                where: { userId },
+                create: {
+                    userId,
+                    ...defaultUserSettings,
+                    ...data,
+                },
+                update: data,
+            })
+        },
+
         createKnowledge: async (_, { input }, context) => {
             const userId = requireAuth(context)
 

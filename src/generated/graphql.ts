@@ -137,6 +137,7 @@ export type Mutation = {
   updateKnowledge: Knowledge;
   updateProfile: User;
   updateResource: Resource;
+  updateUserSettings: UserSettings;
 };
 
 
@@ -208,6 +209,11 @@ export type MutationUpdateResourceArgs = {
   input: UpdateResourceInput;
 };
 
+
+export type MutationUpdateUserSettingsArgs = {
+  input: UpdateUserSettingsInput;
+};
+
 export type Query = {
   __typename?: 'Query';
   connections: Array<Connection>;
@@ -219,6 +225,7 @@ export type Query = {
   recentActivity: ActivityPage;
   resources: Array<Resource>;
   resourcesByKnowledge: Array<Resource>;
+  userSettings: UserSettings;
 };
 
 
@@ -310,6 +317,16 @@ export type UpdateResourceInput = {
   url?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateUserSettingsInput = {
+  accentColor?: InputMaybe<Scalars['String']['input']>;
+  dateFormat?: InputMaybe<Scalars['String']['input']>;
+  emailNotifications?: InputMaybe<Scalars['Boolean']['input']>;
+  inAppNotifications?: InputMaybe<Scalars['Boolean']['input']>;
+  language?: InputMaybe<Scalars['String']['input']>;
+  theme?: InputMaybe<Scalars['String']['input']>;
+  timeZone?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type User = {
   __typename?: 'User';
   avatarUrl?: Maybe<Scalars['String']['output']>;
@@ -320,6 +337,17 @@ export type User = {
   location?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   skills: Array<Scalars['String']['output']>;
+};
+
+export type UserSettings = {
+  __typename?: 'UserSettings';
+  accentColor: Scalars['String']['output'];
+  dateFormat: Scalars['String']['output'];
+  emailNotifications: Scalars['Boolean']['output'];
+  inAppNotifications: Scalars['Boolean']['output'];
+  language: Scalars['String']['output'];
+  theme: Scalars['String']['output'];
+  timeZone: Scalars['String']['output'];
 };
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
@@ -425,7 +453,9 @@ export type ResolversTypes = ResolversObject<{
   UpdateKnowledgeInput: UpdateKnowledgeInput;
   UpdateProfileInput: UpdateProfileInput;
   UpdateResourceInput: UpdateResourceInput;
+  UpdateUserSettingsInput: UpdateUserSettingsInput;
   User: ResolverTypeWrapper<User>;
+  UserSettings: ResolverTypeWrapper<UserSettings>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -454,7 +484,9 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateKnowledgeInput: UpdateKnowledgeInput;
   UpdateProfileInput: UpdateProfileInput;
   UpdateResourceInput: UpdateResourceInput;
+  UpdateUserSettingsInput: UpdateUserSettingsInput;
   User: User;
+  UserSettings: UserSettings;
 }>;
 
 export type ActivityResolvers<ContextType = any, ParentType extends ResolversParentTypes['Activity'] = ResolversParentTypes['Activity']> = ResolversObject<{
@@ -529,6 +561,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
   updateProfile?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
   updateResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationUpdateResourceArgs, 'id' | 'input'>>;
+  updateUserSettings?: Resolver<ResolversTypes['UserSettings'], ParentType, ContextType, RequireFields<MutationUpdateUserSettingsArgs, 'input'>>;
 }>;
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
@@ -541,6 +574,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   recentActivity?: Resolver<ResolversTypes['ActivityPage'], ParentType, ContextType, RequireFields<QueryRecentActivityArgs, 'limit'>>;
   resources?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType>;
   resourcesByKnowledge?: Resolver<Array<ResolversTypes['Resource']>, ParentType, ContextType, RequireFields<QueryResourcesByKnowledgeArgs, 'id'>>;
+  userSettings?: Resolver<ResolversTypes['UserSettings'], ParentType, ContextType>;
 }>;
 
 export type ResourceResolvers<ContextType = any, ParentType extends ResolversParentTypes['Resource'] = ResolversParentTypes['Resource']> = ResolversObject<{
@@ -568,6 +602,16 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   skills?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;
 
+export type UserSettingsResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserSettings'] = ResolversParentTypes['UserSettings']> = ResolversObject<{
+  accentColor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  dateFormat?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  emailNotifications?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  inAppNotifications?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  language?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  theme?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  timeZone?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type Resolvers<ContextType = any> = ResolversObject<{
   Activity?: ActivityResolvers<ContextType>;
   ActivityPage?: ActivityPageResolvers<ContextType>;
@@ -581,5 +625,6 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Query?: QueryResolvers<ContextType>;
   Resource?: ResourceResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  UserSettings?: UserSettingsResolvers<ContextType>;
 }>;
 
