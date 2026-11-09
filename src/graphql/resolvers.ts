@@ -624,6 +624,35 @@ export const resolvers: Resolvers<Context> = {
                 user,
             }
         },
+        changePassword: async (_, { currentPassword, newPassword }, context) => {
+            const userId = requireAuth(context)
+            const user = await prisma.user.findUnique({ where: { id: userId } })
+
+            if (!user) throw new Error('User not found')
+            const validPassword = await bcrypt.compare(currentPassword, user.passwordHash)
+            if (!validPassword) throw new Error('Current password is incorrect')
+
+            if (newPassword.length < 8) {
+                throw new Error('Password must contain at least 8 characters')
+            }
+            if (!/[a-z]/.test(newPassword)) {
+                throw new Error('Password must contain a lowercase character')
+            }
+            if (!/[A-Z]/.test(newPassword)) {
+                throw new Error('Password must contain an uppercase character')
+            }
+            if (!/[0-9]/.test(newPassword)) {
+                throw new Error('Password must contain a number')
+            }
+
+            const passwordHash = await bcrypt.hash(newPassword, 12)
+            await prisma.user.update({
+                where: { id: userId },
+                data: { passwordHash },
+            })
+
+            return true
+        },
         updateProfile: async (_, { input }, context) => {
             const userId = requireAuth(context)
 

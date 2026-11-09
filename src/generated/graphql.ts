@@ -123,6 +123,7 @@ export const KnowledgeType = {
 export type KnowledgeType = typeof KnowledgeType[keyof typeof KnowledgeType];
 export type Mutation = {
   __typename?: 'Mutation';
+  changePassword: Scalars['Boolean']['output'];
   confirmAvatarUpload: User;
   createAvatarUploadUrl: AvatarUploadUrlPayload;
   createConnection: Connection;
@@ -138,6 +139,12 @@ export type Mutation = {
   updateProfile: User;
   updateResource: Resource;
   updateUserSettings: UserSettings;
+};
+
+
+export type MutationChangePasswordArgs = {
+  currentPassword: Scalars['String']['input'];
+  newPassword: Scalars['String']['input'];
 };
 
 
@@ -547,6 +554,7 @@ export type KnowledgeResolvers<ContextType = any, ParentType extends ResolversPa
 }>;
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
+  changePassword?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationChangePasswordArgs, 'currentPassword' | 'newPassword'>>;
   confirmAvatarUpload?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
   createAvatarUploadUrl?: Resolver<ResolversTypes['AvatarUploadUrlPayload'], ParentType, ContextType, RequireFields<MutationCreateAvatarUploadUrlArgs, 'input'>>;
   createConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationCreateConnectionArgs, 'input'>>;

@@ -220,6 +220,7 @@ type Mutation {
   deleteResource(id: ID!): Boolean!
   signup(input: SignupInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
+  changePassword(currentPassword: String!, newPassword: String!): Boolean!
   updateProfile(input: UpdateProfileInput!): User!
   updateUserSettings(input: UpdateUserSettingsInput!): UserSettings!
   createAvatarUploadUrl(input: CreateAvatarUploadUrlInput!): AvatarUploadUrlPayload!
