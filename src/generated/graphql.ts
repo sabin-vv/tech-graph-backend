@@ -85,6 +85,12 @@ export type CreateKnowledgeInput = {
   type: KnowledgeType;
 };
 
+export type CreateOtpPayload = {
+  __typename?: 'CreateOtpPayload';
+  challengeId: Scalars['ID']['output'];
+  expiresIn: Scalars['Int']['output'];
+};
+
 export type CreateResourceInput = {
   description: Scalars['String']['input'];
   knowledgeId: Scalars['ID']['input'];
@@ -129,6 +135,7 @@ export type Mutation = {
   createConnection: Connection;
   createKnowledge: Knowledge;
   createResource: Resource;
+  createSignupOtp: CreateOtpPayload;
   deleteConnection: Scalars['Boolean']['output'];
   deleteKnowledge: Scalars['Boolean']['output'];
   deleteResource: Scalars['Boolean']['output'];
@@ -139,6 +146,7 @@ export type Mutation = {
   updateProfile: User;
   updateResource: Resource;
   updateUserSettings: UserSettings;
+  verifySignupOtp: VerifyOtpPayload;
 };
 
 
@@ -168,6 +176,11 @@ export type MutationCreateResourceArgs = {
 };
 
 
+export type MutationCreateSignupOtpArgs = {
+  email: Scalars['String']['input'];
+};
+
+
 export type MutationDeleteConnectionArgs = {
   id: Scalars['ID']['input'];
 };
@@ -191,6 +204,7 @@ export type MutationLoginArgs = {
 
 export type MutationSignupArgs = {
   input: SignupInput;
+  verificationToken: Scalars['String']['input'];
 };
 
 
@@ -219,6 +233,13 @@ export type MutationUpdateResourceArgs = {
 
 export type MutationUpdateUserSettingsArgs = {
   input: UpdateUserSettingsInput;
+};
+
+
+export type MutationVerifySignupOtpArgs = {
+  challengeId: Scalars['ID']['input'];
+  email: Scalars['String']['input'];
+  otp: Scalars['String']['input'];
 };
 
 export type Query = {
@@ -357,6 +378,11 @@ export type UserSettings = {
   timeZone: Scalars['String']['output'];
 };
 
+export type VerifyOtpPayload = {
+  __typename?: 'VerifyOtpPayload';
+  verificationToken: Scalars['String']['output'];
+};
+
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
 
@@ -442,6 +468,7 @@ export type ResolversTypes = ResolversObject<{
   CreateAvatarUploadUrlInput: CreateAvatarUploadUrlInput;
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
+  CreateOtpPayload: ResolverTypeWrapper<CreateOtpPayload>;
   CreateResourceInput: CreateResourceInput;
   DashboardSummary: ResolverTypeWrapper<DashboardSummary>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
@@ -463,6 +490,7 @@ export type ResolversTypes = ResolversObject<{
   UpdateUserSettingsInput: UpdateUserSettingsInput;
   User: ResolverTypeWrapper<User>;
   UserSettings: ResolverTypeWrapper<UserSettings>;
+  VerifyOtpPayload: ResolverTypeWrapper<VerifyOtpPayload>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -476,6 +504,7 @@ export type ResolversParentTypes = ResolversObject<{
   CreateAvatarUploadUrlInput: CreateAvatarUploadUrlInput;
   CreateConnectionInput: CreateConnectionInput;
   CreateKnowledgeInput: CreateKnowledgeInput;
+  CreateOtpPayload: CreateOtpPayload;
   CreateResourceInput: CreateResourceInput;
   DashboardSummary: DashboardSummary;
   DateTime: Scalars['DateTime']['output'];
@@ -494,6 +523,7 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateUserSettingsInput: UpdateUserSettingsInput;
   User: User;
   UserSettings: UserSettings;
+  VerifyOtpPayload: VerifyOtpPayload;
 }>;
 
 export type ActivityResolvers<ContextType = any, ParentType extends ResolversParentTypes['Activity'] = ResolversParentTypes['Activity']> = ResolversObject<{
@@ -531,6 +561,11 @@ export type ConnectionResolvers<ContextType = any, ParentType extends ResolversP
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
+export type CreateOtpPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['CreateOtpPayload'] = ResolversParentTypes['CreateOtpPayload']> = ResolversObject<{
+  challengeId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  expiresIn?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export type DashboardSummaryResolvers<ContextType = any, ParentType extends ResolversParentTypes['DashboardSummary'] = ResolversParentTypes['DashboardSummary']> = ResolversObject<{
   connectionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   knowledgeCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -560,16 +595,18 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationCreateConnectionArgs, 'input'>>;
   createKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationCreateKnowledgeArgs, 'input'>>;
   createResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationCreateResourceArgs, 'input'>>;
+  createSignupOtp?: Resolver<ResolversTypes['CreateOtpPayload'], ParentType, ContextType, RequireFields<MutationCreateSignupOtpArgs, 'email'>>;
   deleteConnection?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteConnectionArgs, 'id'>>;
   deleteKnowledge?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteKnowledgeArgs, 'id'>>;
   deleteResource?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteResourceArgs, 'id'>>;
   login?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'email' | 'password'>>;
-  signup?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignupArgs, 'input'>>;
+  signup?: Resolver<ResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<MutationSignupArgs, 'input' | 'verificationToken'>>;
   updateConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationUpdateConnectionArgs, 'id'>>;
   updateKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationUpdateKnowledgeArgs, 'id' | 'input'>>;
   updateProfile?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateProfileArgs, 'input'>>;
   updateResource?: Resolver<ResolversTypes['Resource'], ParentType, ContextType, RequireFields<MutationUpdateResourceArgs, 'id' | 'input'>>;
   updateUserSettings?: Resolver<ResolversTypes['UserSettings'], ParentType, ContextType, RequireFields<MutationUpdateUserSettingsArgs, 'input'>>;
+  verifySignupOtp?: Resolver<ResolversTypes['VerifyOtpPayload'], ParentType, ContextType, RequireFields<MutationVerifySignupOtpArgs, 'challengeId' | 'email' | 'otp'>>;
 }>;
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = ResolversObject<{
@@ -620,12 +657,17 @@ export type UserSettingsResolvers<ContextType = any, ParentType extends Resolver
   timeZone?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type VerifyOtpPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['VerifyOtpPayload'] = ResolversParentTypes['VerifyOtpPayload']> = ResolversObject<{
+  verificationToken?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type Resolvers<ContextType = any> = ResolversObject<{
   Activity?: ActivityResolvers<ContextType>;
   ActivityPage?: ActivityPageResolvers<ContextType>;
   AuthPayload?: AuthPayloadResolvers<ContextType>;
   AvatarUploadUrlPayload?: AvatarUploadUrlPayloadResolvers<ContextType>;
   Connection?: ConnectionResolvers<ContextType>;
+  CreateOtpPayload?: CreateOtpPayloadResolvers<ContextType>;
   DashboardSummary?: DashboardSummaryResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Knowledge?: KnowledgeResolvers<ContextType>;
@@ -634,5 +676,6 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Resource?: ResourceResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserSettings?: UserSettingsResolvers<ContextType>;
+  VerifyOtpPayload?: VerifyOtpPayloadResolvers<ContextType>;
 }>;
 
