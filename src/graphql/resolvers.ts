@@ -1,11 +1,12 @@
-import { prisma } from '../lib/prisma.js'
-import type { Resolvers } from '../generated/graphql.js'
 import bcrypt from 'bcryptjs'
+
+import type { Resolvers } from '../generated/graphql.js'
 import { createAuthToken } from '../lib/auth.js'
-import { requireAuth, type Context } from './context.js'
-import { consumeSignupVerification, createSignupOtp, verifySignupOtp } from '../lib/otp.js'
 import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.js'
 import { withPrismaErrorHandling } from '../lib/errors/PrismaError.js'
+import { consumeSignupVerification, createSignupOtp, verifySignupOtp } from '../lib/otp.js'
+import { prisma } from '../lib/prisma.js'
+import { type Context,requireAuth } from './context.js'
 
 const includeKnowledgeRelation = {
     source: { include: { user: true } },

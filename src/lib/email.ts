@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+
 import { createGraphQLError, GQL_ERROR_CODES } from './errors/GraphQLError.js'
 
 export const sendSignupOtpEmail = async (email: string, otp: string): Promise<void> => {

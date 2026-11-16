@@ -1,4 +1,5 @@
 import jwt, { type JwtPayload } from 'jsonwebtoken'
+
 import { AppError } from './errors/AppError.js'
 
 const getJwtSecret = (): string => {

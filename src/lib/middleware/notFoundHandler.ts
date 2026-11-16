@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express'
+
 import { HttpError } from '../errors/HttpError.js'
 
 export const notFoundHandler: RequestHandler = (req, _res, next) => {

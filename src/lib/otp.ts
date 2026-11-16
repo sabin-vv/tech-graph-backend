@@ -1,8 +1,8 @@
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'node:crypto'
 
-import { client } from './redis.js'
 import { sendSignupOtpEmail } from './email.js'
 import { createGraphQLError, GQL_ERROR_CODES } from './errors/GraphQLError.js'
+import { client } from './redis.js'
 
 const OTP_TTL_SECONDS = 5 * 60
 const VERIFIED_TTL_SECONDS = 10 * 60

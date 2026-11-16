@@ -1,4 +1,5 @@
 import { createClient } from 'redis'
+
 import { createGraphQLError, GQL_ERROR_CODES } from './errors/GraphQLError.js'
 
 const REDIS_URL = process.env.REDIS_URL || ''

@@ -1,15 +1,18 @@
 import 'dotenv/config'
-import { ApolloServer } from '@apollo/server'
-import express from 'express'
-import { resolvers } from './graphql/resolvers.js'
-import { expressMiddleware } from '@as-integrations/express5'
+
 import { readFile } from 'node:fs/promises'
+
+import { ApolloServer } from '@apollo/server'
+import { expressMiddleware } from '@as-integrations/express5'
 import cors from 'cors'
-import { createContext, type Context } from './graphql/context.js'
-import { connectRedis } from './lib/redis.js'
-import { notFoundHandler } from './lib/middleware/notFoundHandler.js'
-import { errorHandler } from './lib/middleware/errorHandler.js'
+import express from 'express'
+
+import { type Context,createContext } from './graphql/context.js'
+import { resolvers } from './graphql/resolvers.js'
 import { formatGraphQLError } from './lib/errors/formatGraphQLError.js'
+import { errorHandler } from './lib/middleware/errorHandler.js'
+import { notFoundHandler } from './lib/middleware/notFoundHandler.js'
+import { connectRedis } from './lib/redis.js'
 
 const app = express()
 

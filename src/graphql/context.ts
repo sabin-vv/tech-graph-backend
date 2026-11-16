@@ -1,7 +1,8 @@
 import type { Request } from 'express'
+
 import { verifyAuthToken } from '../lib/auth.js'
-import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.js'
 import { AppError } from '../lib/errors/AppError.js'
+import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.js'
 
 export interface Context {
     userId: string | null
