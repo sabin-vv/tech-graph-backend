@@ -3,6 +3,9 @@ import type { Resolvers } from '../generated/graphql.js'
 import bcrypt from 'bcryptjs'
 import { createAuthToken } from '../lib/auth.js'
 import { requireAuth, type Context } from './context.js'
+import { consumeSignupVerification, createSignupOtp, verifySignupOtp } from '../lib/otp.js'
+import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.js'
+import { withPrismaErrorHandling } from '../lib/errors/PrismaError.js'
 
 const includeKnowledgeRelation = {
     source: { include: { user: true } },
@@ -30,7 +33,7 @@ const userSettingsOptions = {
 export const resolvers: Resolvers<Context> = {
     Query: {
         me: async (_, __, context) => {
-            if (!context.userId) throw new Error('Authentication required')
+            if (!context.userId) throw createGraphQLError('Authentication required', GQL_ERROR_CODES.UNAUTHENTICATED)
 
             return prisma.user.findUnique({
                 where: {
@@ -150,22 +153,19 @@ export const resolvers: Resolvers<Context> = {
                         !('createdAt' in parsed) ||
                         typeof parsed.createdAt !== 'string'
                     ) {
-                        throw new Error('Invalid activity cursor')
+                        throw createGraphQLError('Invalid activity cursor', GQL_ERROR_CODES.BAD_USER_INPUT)
                     }
 
                     const createdAt = new Date(parsed.createdAt)
                     if (Number.isNaN(createdAt.getTime())) {
-                        throw new Error('Invalid activity cursor')
+                        throw createGraphQLError('Invalid activity cursor', GQL_ERROR_CODES.BAD_USER_INPUT)
                     }
 
                     cursorFilter = {
-                        OR: [
-                            { createdAt: { lt: createdAt } },
-                            { createdAt, id: { lt: parsed.id } },
-                        ],
+                        OR: [{ createdAt: { lt: createdAt } }, { createdAt, id: { lt: parsed.id } }],
                     }
                 } catch {
-                    throw new Error('Invalid activity cursor')
+                    throw createGraphQLError('Invalid activity cursor', GQL_ERROR_CODES.BAD_USER_INPUT)
                 }
             }
 
@@ -197,19 +197,18 @@ export const resolvers: Resolvers<Context> = {
         dashboardSummary: async (_, __, context) => {
             const userId = requireAuth(context)
 
-            const [knowledgeCount, connectionCount, resourceCount, tagCounts] =
-                await Promise.all([
-                    prisma.knowledge.count({ where: { userId } }),
-                    prisma.connection.count({ where: { userId } }),
-                    prisma.resource.count({ where: { userId } }),
-                    prisma.$queryRaw<Array<{ count: number }>>`
+            const [knowledgeCount, connectionCount, resourceCount, tagCounts] = await Promise.all([
+                prisma.knowledge.count({ where: { userId } }),
+                prisma.connection.count({ where: { userId } }),
+                prisma.resource.count({ where: { userId } }),
+                prisma.$queryRaw<Array<{ count: number }>>`
                         SELECT COUNT(DISTINCT LOWER(BTRIM(tag)))::int AS count
                         FROM "Knowledge"
                         CROSS JOIN LATERAL UNNEST("tags") AS tags(tag)
                         WHERE "userId" = ${userId}
                           AND BTRIM(tag) <> ''
                     `,
-                ])
+            ])
 
             return {
                 knowledgeCount,
@@ -250,46 +249,50 @@ export const resolvers: Resolvers<Context> = {
                 const value = input[field]
                 const allowedValues: readonly string[] = userSettingsOptions[field]
                 if (value != null && !allowedValues.includes(value)) {
-                    throw new Error(`Invalid ${field} setting`)
+                    throw createGraphQLError(`Invalid ${field} setting`, GQL_ERROR_CODES.BAD_USER_INPUT)
                 }
             }
 
-            return prisma.userSettings.upsert({
-                where: { userId },
-                create: {
-                    userId,
-                    ...defaultUserSettings,
-                    ...data,
-                },
-                update: data,
-            })
+            return withPrismaErrorHandling(() =>
+                prisma.userSettings.upsert({
+                    where: { userId },
+                    create: {
+                        userId,
+                        ...defaultUserSettings,
+                        ...data,
+                    },
+                    update: data,
+                }),
+            )
         },
 
         createKnowledge: async (_, { input }, context) => {
             const userId = requireAuth(context)
 
-            return prisma.$transaction(async (transaction) => {
-                const knowledge = await transaction.knowledge.create({
-                    data: {
-                        ...input,
-                        userId,
-                    },
-                    include: {
-                        user: true,
-                    },
-                })
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const knowledge = await transaction.knowledge.create({
+                        data: {
+                            ...input,
+                            userId,
+                        },
+                        include: {
+                            user: true,
+                        },
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'created',
-                        entityType: 'knowledge',
-                        summary: knowledge.title,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'created',
+                            entityType: 'knowledge',
+                            summary: knowledge.title,
+                        },
+                    })
 
-                return knowledge
-            })
+                    return knowledge
+                }),
+            )
         },
 
         updateKnowledge: async (_, { id, input }, context) => {
@@ -303,81 +306,85 @@ export const resolvers: Resolvers<Context> = {
             })
 
             if (!existingKnowledge) {
-                throw new Error('Knowledge not found')
+                throw createGraphQLError('Knowledge not found', GQL_ERROR_CODES.NOT_FOUND)
             }
 
             const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
 
-            return prisma.$transaction(async (transaction) => {
-                const knowledge = await transaction.knowledge.update({
-                    where: { id },
-                    data,
-                    include: { user: true },
-                })
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const knowledge = await transaction.knowledge.update({
+                        where: { id },
+                        data,
+                        include: { user: true },
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'updated',
-                        entityType: 'knowledge',
-                        summary: knowledge.title,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'updated',
+                            entityType: 'knowledge',
+                            summary: knowledge.title,
+                        },
+                    })
 
-                return knowledge
-            })
+                    return knowledge
+                }),
+            )
         },
 
         deleteKnowledge: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            return await prisma.$transaction(async (transaction) => {
-                const existingKnowledge = await transaction.knowledge.findFirst({
-                    where: {
-                        id,
-                        userId,
-                    },
-                    select: {
-                        id: true,
-                        title: true,
-                    },
-                })
+            return await withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const existingKnowledge = await transaction.knowledge.findFirst({
+                        where: {
+                            id,
+                            userId,
+                        },
+                        select: {
+                            id: true,
+                            title: true,
+                        },
+                    })
 
-                if (!existingKnowledge) {
-                    throw new Error('Knowledge not found')
-                }
+                    if (!existingKnowledge) {
+                        throw createGraphQLError('Knowledge not found', GQL_ERROR_CODES.NOT_FOUND)
+                    }
 
-                await transaction.connection.deleteMany({
-                    where: {
-                        userId,
-                        OR: [{ sourceId: id }, { targetId: id }],
-                    },
-                })
+                    await transaction.connection.deleteMany({
+                        where: {
+                            userId,
+                            OR: [{ sourceId: id }, { targetId: id }],
+                        },
+                    })
 
-                await transaction.resource.deleteMany({
-                    where: {
-                        knowledgeId: id,
-                        userId,
-                    },
-                })
+                    await transaction.resource.deleteMany({
+                        where: {
+                            knowledgeId: id,
+                            userId,
+                        },
+                    })
 
-                await transaction.knowledge.delete({
-                    where: {
-                        id,
-                    },
-                })
+                    await transaction.knowledge.delete({
+                        where: {
+                            id,
+                        },
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'deleted',
-                        entityType: 'knowledge',
-                        summary: existingKnowledge.title,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'deleted',
+                            entityType: 'knowledge',
+                            summary: existingKnowledge.title,
+                        },
+                    })
 
-                return true
-            })
+                    return true
+                }),
+            )
         },
 
         createConnection: async (_, { input }, context) => {
@@ -396,86 +403,92 @@ export const resolvers: Resolvers<Context> = {
                 },
             })
             if (knowledge.length !== 2) {
-                throw new Error('Knowledge not found')
+                throw createGraphQLError('Knowledge not found', GQL_ERROR_CODES.NOT_FOUND)
             }
 
             const source = knowledge.find((item) => item.id === input.sourceId)
             const target = knowledge.find((item) => item.id === input.targetId)
             if (!source || !target) {
-                throw new Error('Knowledge not found')
+                throw createGraphQLError('Knowledge not found', GQL_ERROR_CODES.NOT_FOUND)
             }
 
-            return prisma.$transaction(async (transaction) => {
-                const connection = await transaction.connection.create({
-                    data: {
-                        ...input,
-                        userId,
-                    },
-                    include: includeKnowledgeRelation,
-                })
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const connection = await transaction.connection.create({
+                        data: {
+                            ...input,
+                            userId,
+                        },
+                        include: includeKnowledgeRelation,
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'created',
-                        entityType: 'connection',
-                        summary: `${source.title} → ${input.relation} → ${target.title}`,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'created',
+                            entityType: 'connection',
+                            summary: `${source.title} → ${input.relation} → ${target.title}`,
+                        },
+                    })
 
-                return connection
-            })
+                    return connection
+                }),
+            )
         },
 
         updateConnection: async (_, { id, input }, context) => {
             const userId = requireAuth(context)
 
-            return prisma.$transaction(async (transaction) => {
-                const connection = await transaction.connection.update({
-                    where: {
-                        id,
-                        userId,
-                    },
-                    data: {
-                        ...(input?.relation != null && { relation: input.relation }),
-                    },
-                    include: includeKnowledgeRelation,
-                })
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const connection = await transaction.connection.update({
+                        where: {
+                            id,
+                            userId,
+                        },
+                        data: {
+                            ...(input?.relation != null && { relation: input.relation }),
+                        },
+                        include: includeKnowledgeRelation,
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'updated',
-                        entityType: 'connection',
-                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'updated',
+                            entityType: 'connection',
+                            summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
+                        },
+                    })
 
-                return connection
-            })
+                    return connection
+                }),
+            )
         },
 
         deleteConnection: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            await prisma.$transaction(async (transaction) => {
-                const connection = await transaction.connection.delete({
-                    where: {
-                        id,
-                        userId,
-                    },
-                    include: includeKnowledgeRelation,
-                })
+            await withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const connection = await transaction.connection.delete({
+                        where: {
+                            id,
+                            userId,
+                        },
+                        include: includeKnowledgeRelation,
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'deleted',
-                        entityType: 'connection',
-                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
-                    },
-                })
-            })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'deleted',
+                            entityType: 'connection',
+                            summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
+                        },
+                    })
+                }),
+            )
 
             return true
         },
@@ -491,33 +504,35 @@ export const resolvers: Resolvers<Context> = {
             })
 
             if (!knowledge) {
-                throw new Error('Knowledge not found')
+                throw createGraphQLError('Knowledge not found', GQL_ERROR_CODES.NOT_FOUND)
             }
 
-            return prisma.$transaction(async (transaction) => {
-                const resource = await transaction.resource.create({
-                    data: { ...input, userId },
-                    include: {
-                        user: true,
-                        knowledge: {
-                            include: {
-                                user: true,
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const resource = await transaction.resource.create({
+                        data: { ...input, userId },
+                        include: {
+                            user: true,
+                            knowledge: {
+                                include: {
+                                    user: true,
+                                },
                             },
                         },
-                    },
-                })
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'created',
-                        entityType: 'resource',
-                        summary: resource.title,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'created',
+                            entityType: 'resource',
+                            summary: resource.title,
+                        },
+                    })
 
-                return resource
-            })
+                    return resource
+                }),
+            )
         },
 
         updateResource: async (__dirname, { id, input }, context) => {
@@ -525,77 +540,99 @@ export const resolvers: Resolvers<Context> = {
 
             const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
 
-            return prisma.$transaction(async (transaction) => {
-                const resource = await transaction.resource.update({
-                    where: { id, userId },
-                    data,
-                    include: {
-                        user: true,
-                        knowledge: {
-                            include: {
-                                user: true,
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const resource = await transaction.resource.update({
+                        where: { id, userId },
+                        data,
+                        include: {
+                            user: true,
+                            knowledge: {
+                                include: {
+                                    user: true,
+                                },
                             },
                         },
-                    },
-                })
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'updated',
-                        entityType: 'resource',
-                        summary: resource.title,
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'updated',
+                            entityType: 'resource',
+                            summary: resource.title,
+                        },
+                    })
 
-                return resource
-            })
+                    return resource
+                }),
+            )
         },
 
         deleteResource: async (_, { id }, context) => {
             const userId = requireAuth(context)
 
-            await prisma.$transaction(async (transaction) => {
-                const resource = await transaction.resource.delete({
-                    where: { id, userId },
-                })
+            await withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const resource = await transaction.resource.delete({
+                        where: { id, userId },
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'deleted',
-                        entityType: 'resource',
-                        summary: resource.title,
-                    },
-                })
-            })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'deleted',
+                            entityType: 'resource',
+                            summary: resource.title,
+                        },
+                    })
+                }),
+            )
             return true
         },
 
-        signup: async (_, { input }) => {
+        createSignupOtp: async (_, { email }) => {
+            const normalizedEmail = email.trim().toLowerCase()
+            const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+
+            if (existingUser) {
+                throw createGraphQLError('This Email is already registered', GQL_ERROR_CODES.CONFLICT)
+            }
+
+            return createSignupOtp(normalizedEmail)
+        },
+
+        verifySignupOtp: async (_, { email, challengeId, otp }) => verifySignupOtp(email, challengeId, otp),
+
+        signup: async (_, { input, verificationToken }) => {
             const name = input.name.trim()
             const email = input.email.trim().toLowerCase()
             const password = input.password
 
-            if (!name) throw new Error('Name required')
-            if (!email) throw new Error('Email required')
-            if (!password.trim()) throw new Error('Password required')
+            if (!name) throw createGraphQLError('Name required', GQL_ERROR_CODES.BAD_USER_INPUT)
+            if (!email) throw createGraphQLError('Email required', GQL_ERROR_CODES.BAD_USER_INPUT)
+            if (!password.trim()) throw createGraphQLError('Password required', GQL_ERROR_CODES.BAD_USER_INPUT)
 
-            if (password.length < 8) throw new Error('Password should have min 8 character')
+            if (password.length < 8)
+                throw createGraphQLError('Password should have min 8 character', GQL_ERROR_CODES.BAD_USER_INPUT)
 
             const existingUser = await prisma.user.findUnique({ where: { email } })
 
-            if (existingUser) throw new Error('This Email is already registered')
+            if (existingUser) throw createGraphQLError('This Email is already registered', GQL_ERROR_CODES.CONFLICT)
+
+            await consumeSignupVerification(email, verificationToken)
 
             const passwordHash = await bcrypt.hash(password, 12)
 
-            const user = await prisma.user.create({
-                data: {
-                    name,
-                    email,
-                    passwordHash,
-                },
-            })
+            const user = await withPrismaErrorHandling(() =>
+                prisma.user.create({
+                    data: {
+                        name,
+                        email,
+                        passwordHash,
+                    },
+                }),
+            )
 
             const token = createAuthToken(user.id)
 
@@ -607,15 +644,15 @@ export const resolvers: Resolvers<Context> = {
 
         login: async (_, { email, password }) => {
             const normalizedEmail = email.trim().toLowerCase()
-            if (!normalizedEmail) throw new Error('Email is required')
-            if (!password) throw new Error('Password is required')
+            if (!normalizedEmail) throw createGraphQLError('Email is required', GQL_ERROR_CODES.BAD_USER_INPUT)
+            if (!password) throw createGraphQLError('Password is required', GQL_ERROR_CODES.BAD_USER_INPUT)
 
             const user = await prisma.user.findUnique({ where: { email: normalizedEmail } })
-            if (!user) throw new Error('Invalid credentials')
+            if (!user) throw createGraphQLError('Invalid credentials', GQL_ERROR_CODES.INVALID_CREDENTIALS)
 
             const validPassword = await bcrypt.compare(password, user.passwordHash)
 
-            if (!validPassword) throw new Error('Invalid credentials')
+            if (!validPassword) throw createGraphQLError('Invalid credentials', GQL_ERROR_CODES.INVALID_CREDENTIALS)
 
             const token = createAuthToken(user.id)
 
@@ -628,43 +665,44 @@ export const resolvers: Resolvers<Context> = {
             const userId = requireAuth(context)
             const user = await prisma.user.findUnique({ where: { id: userId } })
 
-            if (!user) throw new Error('User not found')
+            if (!user) throw createGraphQLError('User not found', GQL_ERROR_CODES.NOT_FOUND)
             const validPassword = await bcrypt.compare(currentPassword, user.passwordHash)
-            if (!validPassword) throw new Error('Current password is incorrect')
+            if (!validPassword)
+                throw createGraphQLError('Current password is incorrect', GQL_ERROR_CODES.BAD_USER_INPUT)
 
             if (newPassword.length < 8) {
-                throw new Error('Password must contain at least 8 characters')
+                throw createGraphQLError('Password must contain at least 8 characters', GQL_ERROR_CODES.BAD_USER_INPUT)
             }
             if (!/[a-z]/.test(newPassword)) {
-                throw new Error('Password must contain a lowercase character')
+                throw createGraphQLError('Password must contain a lowercase character', GQL_ERROR_CODES.BAD_USER_INPUT)
             }
             if (!/[A-Z]/.test(newPassword)) {
-                throw new Error('Password must contain an uppercase character')
+                throw createGraphQLError('Password must contain an uppercase character', GQL_ERROR_CODES.BAD_USER_INPUT)
             }
             if (!/[0-9]/.test(newPassword)) {
-                throw new Error('Password must contain a number')
+                throw createGraphQLError('Password must contain a number', GQL_ERROR_CODES.BAD_USER_INPUT)
             }
 
             const passwordHash = await bcrypt.hash(newPassword, 12)
-            await prisma.user.update({
-                where: { id: userId },
-                data: { passwordHash },
-            })
+            await withPrismaErrorHandling(() =>
+                prisma.user.update({
+                    where: { id: userId },
+                    data: { passwordHash },
+                }),
+            )
 
             return true
         },
         updateProfile: async (_, { input }, context) => {
             const userId = requireAuth(context)
 
-            const data = Object.fromEntries(
-                Object.entries(input).filter(([, v]) => v != null),
-            )
+            const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v != null))
 
             if ('name' in data) {
                 const name = String(data.name).trim()
 
                 if (!name) {
-                    throw new Error('Name cannot be empty')
+                    throw createGraphQLError('Name cannot be empty', GQL_ERROR_CODES.BAD_USER_INPUT)
                 }
                 data.name = name
             }
@@ -673,38 +711,39 @@ export const resolvers: Resolvers<Context> = {
                 const email = String(data.email).trim().toLowerCase()
 
                 if (!email) {
-                    throw new Error('Email cannot be empty')
+                    throw createGraphQLError('Email cannot be empty', GQL_ERROR_CODES.BAD_USER_INPUT)
                 }
 
                 const existingUser = await prisma.user.findUnique({ where: { email } })
 
                 if (existingUser && existingUser.id !== userId) {
-                    throw new Error('This Email is already registered')
+                    throw createGraphQLError('This Email is already registered', GQL_ERROR_CODES.CONFLICT)
                 }
 
                 data.email = email
             }
 
-            return prisma.$transaction(async (transaction) => {
-                const user = await transaction.user.update({
-                    where: {
-                        id: userId,
-                    },
-                    data,
-                })
+            return withPrismaErrorHandling(() =>
+                prisma.$transaction(async (transaction) => {
+                    const user = await transaction.user.update({
+                        where: {
+                            id: userId,
+                        },
+                        data,
+                    })
 
-                await transaction.activity.create({
-                    data: {
-                        userId,
-                        action: 'updated',
-                        entityType: 'profile',
-                        summary: 'Updated profile',
-                    },
-                })
+                    await transaction.activity.create({
+                        data: {
+                            userId,
+                            action: 'updated',
+                            entityType: 'profile',
+                            summary: 'Updated profile',
+                        },
+                    })
 
-                return user
-            })
-        }
-
+                    return user
+                }),
+            )
+        },
     },
 }
