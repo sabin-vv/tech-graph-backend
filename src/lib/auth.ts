@@ -1,29 +1,46 @@
 import jwt, { type JwtPayload } from 'jsonwebtoken'
+import { AppError } from './errors/AppError.js'
 
-const JWt_SECRET = process.env.JWT_SECRET
+const getJwtSecret = (): string => {
+    const secret = process.env.JWT_SECRET
 
-if (!JWt_SECRET) {
-    throw new Error('JWT is not configured')
+    if (!secret) {
+        throw new AppError('Authentication service is not configured', {
+            statusCode: 500,
+            code: 'INTERNAL_SERVER_ERROR',
+        })
+    }
+
+    return secret
 }
 
-export const createAuthToken = (userId: String) => {
-    return jwt.sign(
-        {
-            userId,
-        },
-        JWt_SECRET,
-        {
-            expiresIn: '7d',
-        },
-    )
+export const createAuthToken = (userId: string) => {
+    return jwt.sign({ userId }, getJwtSecret(), {
+        expiresIn: '7d',
+    })
 }
 
 export const verifyAuthToken = (token: string): string => {
-    const payload = jwt.verify(token, JWt_SECRET) as JwtPayload & {
-        userId?: string
+    const secret = getJwtSecret()
+
+    let payload: JwtPayload & { userId?: string }
+    try {
+        payload = jwt.verify(token, secret) as JwtPayload & {
+            userId?: string
+        }
+    } catch {
+        throw new AppError('Invalid auth token', {
+            statusCode: 401,
+            code: 'UNAUTHENTICATED',
+        })
     }
 
-    if (!payload.userId) throw new Error('Invalid auth token')
+    if (!payload.userId) {
+        throw new AppError('Invalid auth token', {
+            statusCode: 401,
+            code: 'UNAUTHENTICATED',
+        })
+    }
 
     return payload.userId
 }
