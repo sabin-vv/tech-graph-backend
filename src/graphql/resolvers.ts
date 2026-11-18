@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 
 import type { Resolvers } from '../generated/graphql.js'
+import { recordActivity } from '../lib/activity.js'
 import { createAuthToken } from '../lib/auth.js'
 import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.js'
 import { withPrismaErrorHandling } from '../lib/errors/PrismaError.js'
@@ -282,13 +283,11 @@ export const resolvers: Resolvers<Context> = {
                         },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'created',
-                            entityType: 'knowledge',
-                            summary: knowledge.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'created',
+                        entityType: 'knowledge',
+                        summary: knowledge.title,
                     })
 
                     return knowledge
@@ -320,13 +319,11 @@ export const resolvers: Resolvers<Context> = {
                         include: { user: true },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'updated',
-                            entityType: 'knowledge',
-                            summary: knowledge.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'updated',
+                        entityType: 'knowledge',
+                        summary: knowledge.title,
                     })
 
                     return knowledge
@@ -374,13 +371,11 @@ export const resolvers: Resolvers<Context> = {
                         },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'deleted',
-                            entityType: 'knowledge',
-                            summary: existingKnowledge.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'knowledge',
+                        summary: existingKnowledge.title,
                     })
 
                     return true
@@ -423,13 +418,11 @@ export const resolvers: Resolvers<Context> = {
                         include: includeKnowledgeRelation,
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'created',
-                            entityType: 'connection',
-                            summary: `${source.title} → ${input.relation} → ${target.title}`,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'created',
+                        entityType: 'connection',
+                        summary: `${source.title} → ${input.relation} → ${target.title}`,
                     })
 
                     return connection
@@ -453,13 +446,11 @@ export const resolvers: Resolvers<Context> = {
                         include: includeKnowledgeRelation,
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'updated',
-                            entityType: 'connection',
-                            summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'updated',
+                        entityType: 'connection',
+                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
                     })
 
                     return connection
@@ -480,13 +471,11 @@ export const resolvers: Resolvers<Context> = {
                         include: includeKnowledgeRelation,
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'deleted',
-                            entityType: 'connection',
-                            summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'connection',
+                        summary: `${connection.source.title} → ${connection.relation} → ${connection.target.title}`,
                     })
                 }),
             )
@@ -522,13 +511,11 @@ export const resolvers: Resolvers<Context> = {
                         },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'created',
-                            entityType: 'resource',
-                            summary: resource.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'created',
+                        entityType: 'resource',
+                        summary: resource.title,
                     })
 
                     return resource
@@ -556,13 +543,11 @@ export const resolvers: Resolvers<Context> = {
                         },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'updated',
-                            entityType: 'resource',
-                            summary: resource.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'updated',
+                        entityType: 'resource',
+                        summary: resource.title,
                     })
 
                     return resource
@@ -579,13 +564,11 @@ export const resolvers: Resolvers<Context> = {
                         where: { id, userId },
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'deleted',
-                            entityType: 'resource',
-                            summary: resource.title,
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'deleted',
+                        entityType: 'resource',
+                        summary: resource.title,
                     })
                 }),
             )
@@ -626,12 +609,23 @@ export const resolvers: Resolvers<Context> = {
             const passwordHash = await bcrypt.hash(password, 12)
 
             const user = await withPrismaErrorHandling(() =>
-                prisma.user.create({
-                    data: {
-                        name,
-                        email,
-                        passwordHash,
-                    },
+                prisma.$transaction(async (transaction) => {
+                    const createdUser = await transaction.user.create({
+                        data: {
+                            name,
+                            email,
+                            passwordHash,
+                        },
+                    })
+
+                    await recordActivity(transaction, {
+                        userId: createdUser.id,
+                        action: 'created',
+                        entityType: 'profile',
+                        summary: 'Created profile',
+                    })
+
+                    return createdUser
                 }),
             )
 
@@ -686,9 +680,18 @@ export const resolvers: Resolvers<Context> = {
 
             const passwordHash = await bcrypt.hash(newPassword, 12)
             await withPrismaErrorHandling(() =>
-                prisma.user.update({
-                    where: { id: userId },
-                    data: { passwordHash },
+                prisma.$transaction(async (transaction) => {
+                    await transaction.user.update({
+                        where: { id: userId },
+                        data: { passwordHash },
+                    })
+
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'updated',
+                        entityType: 'profile',
+                        summary: 'Changed password',
+                    })
                 }),
             )
 
@@ -733,13 +736,11 @@ export const resolvers: Resolvers<Context> = {
                         data,
                     })
 
-                    await transaction.activity.create({
-                        data: {
-                            userId,
-                            action: 'updated',
-                            entityType: 'profile',
-                            summary: 'Updated profile',
-                        },
+                    await recordActivity(transaction, {
+                        userId,
+                        action: 'updated',
+                        entityType: 'profile',
+                        summary: 'Updated profile',
                     })
 
                     return user
