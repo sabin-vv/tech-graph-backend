@@ -7,7 +7,11 @@ import { createGraphQLError, GQL_ERROR_CODES } from '../lib/errors/GraphQLError.
 import { withPrismaErrorHandling } from '../lib/errors/PrismaError.js'
 import { consumeSignupVerification, createSignupOtp, verifySignupOtp } from '../lib/otp.js'
 import { prisma } from '../lib/prisma.js'
+import { assertObjectExists, createAvatarReadUrl, createAvatarUploadUrl } from '../lib/s3.js'
 import { type Context,requireAuth } from './context.js'
+
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+const AVATAR_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 const includeKnowledgeRelation = {
     source: { include: { user: true } },
@@ -33,6 +37,13 @@ const userSettingsOptions = {
 } as const
 
 export const resolvers: Resolvers<Context> = {
+    User: {
+        avatarUrl: async (user) => {
+            if (!user.avatarUrl) return null
+            if (user.avatarUrl.startsWith('http')) return user.avatarUrl
+            return createAvatarReadUrl(user.avatarUrl)
+        },
+    },
     Query: {
         me: async (_, __, context) => {
             if (!context.userId) throw createGraphQLError('Authentication required', GQL_ERROR_CODES.UNAUTHENTICATED)
@@ -744,6 +755,51 @@ export const resolvers: Resolvers<Context> = {
                     })
 
                     return user
+                }),
+            )
+        },
+
+        createAvatarUploadUrl: async (_, { input }, context) => {
+            const userId = requireAuth(context)
+
+            if (!AVATAR_CONTENT_TYPES.has(input.contentType)) {
+                throw createGraphQLError('Unsupported avatar image type', GQL_ERROR_CODES.BAD_USER_INPUT)
+            }
+
+            if (input.size <= 0 || input.size > MAX_AVATAR_SIZE) {
+                throw createGraphQLError('Avatar image must be 5 MB or smaller', GQL_ERROR_CODES.BAD_USER_INPUT)
+            }
+
+            const extension = input.contentType === 'image/jpeg'
+                ? 'jpg'
+                : input.contentType === 'image/png'
+                    ? 'png'
+                    : 'webp'
+            const objectKey = `avatars/${userId}/${crypto.randomUUID()}.${extension}`
+            const uploadUrl = await createAvatarUploadUrl(objectKey, input.contentType)
+
+            return {
+                uploadUrl,
+                objectKey,
+                contentType: input.contentType,
+                expiresIn: 300,
+            }
+        },
+
+        confirmAvatarUpload: async (_, { objectKey }, context) => {
+            const userId = requireAuth(context)
+            const expectedPrefix = `avatars/${userId}/`
+
+            if (!objectKey.startsWith(expectedPrefix) || objectKey.includes('..')) {
+                throw createGraphQLError('Invalid avatar upload', GQL_ERROR_CODES.BAD_USER_INPUT)
+            }
+
+            await assertObjectExists(objectKey)
+
+            return withPrismaErrorHandling(() =>
+                prisma.user.update({
+                    where: { id: userId },
+                    data: { avatarUrl: objectKey },
                 }),
             )
         },

@@ -53,6 +53,7 @@ export type AvatarUploadUrlPayload = {
   __typename?: 'AvatarUploadUrlPayload';
   contentType: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+  objectKey: Scalars['String']['output'];
   uploadUrl: Scalars['String']['output'];
 };
 
@@ -153,6 +154,11 @@ export type Mutation = {
 export type MutationChangePasswordArgs = {
   currentPassword: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
+};
+
+
+export type MutationConfirmAvatarUploadArgs = {
+  objectKey: Scalars['String']['input'];
 };
 
 
@@ -548,6 +554,7 @@ export type AuthPayloadResolvers<ContextType = any, ParentType extends Resolvers
 export type AvatarUploadUrlPayloadResolvers<ContextType = any, ParentType extends ResolversParentTypes['AvatarUploadUrlPayload'] = ResolversParentTypes['AvatarUploadUrlPayload']> = ResolversObject<{
   contentType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   expiresIn?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  objectKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   uploadUrl?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -590,7 +597,7 @@ export type KnowledgeResolvers<ContextType = any, ParentType extends ResolversPa
 
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   changePassword?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationChangePasswordArgs, 'currentPassword' | 'newPassword'>>;
-  confirmAvatarUpload?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  confirmAvatarUpload?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationConfirmAvatarUploadArgs, 'objectKey'>>;
   createAvatarUploadUrl?: Resolver<ResolversTypes['AvatarUploadUrlPayload'], ParentType, ContextType, RequireFields<MutationCreateAvatarUploadUrlArgs, 'input'>>;
   createConnection?: Resolver<ResolversTypes['Connection'], ParentType, ContextType, RequireFields<MutationCreateConnectionArgs, 'input'>>;
   createKnowledge?: Resolver<ResolversTypes['Knowledge'], ParentType, ContextType, RequireFields<MutationCreateKnowledgeArgs, 'input'>>;

@@ -137,6 +137,7 @@ type VerifyOtpPayload {
 
 type AvatarUploadUrlPayload {
   uploadUrl: String!
+  objectKey: String!
   contentType: String!
   expiresIn: Int!
 }
@@ -235,5 +236,5 @@ type Mutation {
   updateProfile(input: UpdateProfileInput!): User!
   updateUserSettings(input: UpdateUserSettingsInput!): UserSettings!
   createAvatarUploadUrl(input: CreateAvatarUploadUrlInput!): AvatarUploadUrlPayload!
-  confirmAvatarUpload: User!
+  confirmAvatarUpload(objectKey: String!): User!
 }
